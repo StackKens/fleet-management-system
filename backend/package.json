@@ -1,0 +1,16 @@
+{
+  "name": "fleet-management-system",
+  "version": "1.0.0",
+  "description": "Backend API for fleet-management-system",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node src/server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}
