@@ -1,50 +1,16 @@
 import { type ReactNode, useState } from 'react';
 import { Link, useLocation } from 'wouter';
-import type { LucideIcon } from 'lucide-react';
 import {
-  Activity,
-  BarChart3,
   Bell,
-  CarFront,
-  ClipboardList,
-  Fuel,
-  Gauge,
   LogOut,
   Menu,
-  Settings,
   ShieldCheck,
-  Truck,
-  UserRound,
-  UsersRound,
-  Wrench,
   X,
 } from 'lucide-react';
 import { useNotifications } from '@/hooks/use-fleet-data';
 import { useAuth } from '@/contexts/auth-context';
 import { Avatar } from '@/components/ui/avatar';
-import type { UserRole } from '@/data/types';
-
-type NavItem = {
-  label: string;
-  href: string;
-  icon: LucideIcon;
-  section?: string;
-  roles?: UserRole[];
-};
-
-const allNavigation: NavItem[] = [
-  { label: 'Dashboard', href: '/dashboard', icon: Gauge, section: 'Workspace' },
-  { label: 'Vehicles', href: '/vehicles', icon: Truck, section: 'Workspace' },
-  { label: 'Requests', href: '/requests', icon: ClipboardList, section: 'Workspace' },
-  { label: 'Assignments', href: '/assignments', icon: CarFront, section: 'Workspace', roles: ['Admin', 'Fleet Manager', 'Supervisor'] },
-  { label: 'Drivers', href: '/drivers', icon: UsersRound, section: 'Workspace' },
-  { label: 'Trips', href: '/trips', icon: Activity, section: 'Workspace' },
-  { label: 'Maintenance', href: '/maintenance', icon: Wrench, section: 'Operations' },
-  { label: 'Fuel', href: '/fuel', icon: Fuel, section: 'Operations' },
-  { label: 'Reports', href: '/reports', icon: BarChart3, section: 'Operations' },
-  { label: 'Users', href: '/users', icon: UserRound, section: 'Administration', roles: ['Admin', 'Fleet Manager'] },
-  { label: 'Settings', href: '/settings', icon: Settings, section: 'Administration', roles: ['Admin', 'Fleet Manager'] },
-];
+import { getNavigationForRole, type NavSection } from '@/data/navigation';
 
 function NavigationGroup({
   title,
@@ -53,7 +19,7 @@ function NavigationGroup({
   onNavigate,
 }: {
   title: string;
-  items: NavItem[];
+  items: NavSection['items'];
   location: string;
   onNavigate: () => void;
 }) {
@@ -92,11 +58,9 @@ function Sidebar({ onNavigate }: { onNavigate: () => void }) {
   const [location] = useLocation();
   const { user } = useAuth();
 
-  const visibleItems = allNavigation.filter(
-    (item) => !item.roles || (user && item.roles.includes(user.role)),
-  );
+  if (!user) return null;
 
-  const sections = ['Workspace', 'Operations', 'Administration'] as const;
+  const sections = getNavigationForRole(user.role);
 
   return (
     <aside className="ops-sidebar flex h-full min-h-dvh w-[252px] flex-col border-r border-sidebar-border" aria-label="Fleet Operations navigation">
@@ -111,27 +75,23 @@ function Sidebar({ onNavigate }: { onNavigate: () => void }) {
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 py-7">
-        {sections.map((section) => {
-          const items = visibleItems.filter((i) => i.section === section);
-          if (items.length === 0) return null;
-          return (
-            <NavigationGroup
-              key={section}
-              title={section}
-              items={items}
-              location={location}
-              onNavigate={onNavigate}
-            />
-          );
-        })}
+        {sections.map((section) => (
+          <NavigationGroup
+            key={section.title}
+            title={section.title}
+            items={section.items}
+            location={location}
+            onNavigate={onNavigate}
+          />
+        ))}
       </div>
 
       <div className="border-t border-sidebar-border px-6 py-5">
         <div className="flex items-center gap-3">
-          <Avatar name={user?.name ?? 'User'} size="sm" />
+          <Avatar name={user.name} size="sm" />
           <div className="min-w-0">
-            <p className="truncate text-xs font-semibold text-sidebar-accent-foreground">{user?.name ?? 'User'}</p>
-            <p className="truncate text-[11px] text-sidebar-foreground/50">{user?.role ?? 'Guest'}</p>
+            <p className="truncate text-xs font-semibold text-sidebar-accent-foreground">{user.name}</p>
+            <p className="truncate text-[11px] text-sidebar-foreground/50">{user.role}</p>
           </div>
         </div>
       </div>
@@ -146,10 +106,11 @@ export function FleetShell({ children }: { children: ReactNode }) {
   const { data: notifications } = useNotifications();
   const { user, logout } = useAuth();
 
-  const visibleItems = allNavigation.filter(
-    (item) => !item.roles || (user && item.roles.includes(user.role)),
-  );
-  const currentItem = visibleItems.find((item) => item.href === location);
+  if (!user) return null;
+
+  const sections = getNavigationForRole(user.role);
+  const allItems = sections.flatMap((s) => s.items);
+  const currentItem = allItems.find((item) => item.href === location);
   const unreadCount = (notifications ?? []).filter((n) => !n.read).length;
 
   const handleLogout = () => {
