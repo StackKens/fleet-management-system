@@ -1,8 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import * as mock from '@/data/mock-data';
-import type {
-  VehicleRequest,
-} from '@/data/types';
+import { useFleetStore } from '@/stores/fleet-store';
+import type { VehicleRequest } from '@/data/types';
 
 // ─── Query Keys ─────────────────────────────────────────────────────────────
 export const queryKeys = {
@@ -37,7 +35,7 @@ export function useVehicles() {
     queryKey: queryKeys.vehicles,
     queryFn: async () => {
       await delay();
-      return mock.vehicles;
+      return useFleetStore.getState().vehicles;
     },
   });
 }
@@ -47,7 +45,7 @@ export function useVehicle(id: string) {
     queryKey: queryKeys.vehicle(id),
     queryFn: async () => {
       await delay();
-      const vehicle = mock.vehicles.find((v) => v.id === id);
+      const vehicle = useFleetStore.getState().vehicles.find((v) => v.id === id);
       if (!vehicle) throw new Error('Vehicle not found');
       return vehicle;
     },
@@ -59,7 +57,7 @@ export function useVehicleSummary() {
     queryKey: queryKeys.vehicleSummary,
     queryFn: async () => {
       await delay();
-      return mock.vehicleSummary;
+      return useFleetStore.getState().getVehicleSummary();
     },
   });
 }
@@ -70,7 +68,7 @@ export function useDrivers() {
     queryKey: queryKeys.drivers,
     queryFn: async () => {
       await delay();
-      return mock.drivers;
+      return useFleetStore.getState().drivers;
     },
   });
 }
@@ -80,7 +78,7 @@ export function useDriver(id: string) {
     queryKey: queryKeys.driver(id),
     queryFn: async () => {
       await delay();
-      const driver = mock.drivers.find((d) => d.id === id);
+      const driver = useFleetStore.getState().drivers.find((d) => d.id === id);
       if (!driver) throw new Error('Driver not found');
       return driver;
     },
@@ -93,7 +91,7 @@ export function useRequests() {
     queryKey: queryKeys.requests,
     queryFn: async () => {
       await delay();
-      return mock.requests;
+      return useFleetStore.getState().requests;
     },
   });
 }
@@ -103,7 +101,7 @@ export function useRequest(id: string) {
     queryKey: queryKeys.request(id),
     queryFn: async () => {
       await delay();
-      const request = mock.requests.find((r) => r.id === id);
+      const request = useFleetStore.getState().requests.find((r) => r.id === id);
       if (!request) throw new Error('Request not found');
       return request;
     },
@@ -113,15 +111,14 @@ export function useRequest(id: string) {
 export function useUpdateRequestStatus() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: VehicleRequest['status'] }) => {
+    mutationFn: async ({ id, status, reviewedBy, reason }: { id: string; status: VehicleRequest['status']; reviewedBy?: string; reason?: string }) => {
       await delay();
-      const request = mock.requests.find((r) => r.id === id);
-      if (!request) throw new Error('Request not found');
-      request.status = status;
-      return request;
+      useFleetStore.getState().updateRequestStatus(id, status, reviewedBy, reason);
+      return useFleetStore.getState().requests.find((r) => r.id === id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.requests });
+      queryClient.invalidateQueries({ queryKey: queryKeys.notifications });
     },
   });
 }
@@ -132,7 +129,7 @@ export function useTrips() {
     queryKey: queryKeys.trips,
     queryFn: async () => {
       await delay();
-      return mock.trips;
+      return useFleetStore.getState().trips;
     },
   });
 }
@@ -142,7 +139,7 @@ export function useTrip(id: string) {
     queryKey: queryKeys.trip(id),
     queryFn: async () => {
       await delay();
-      const trip = mock.trips.find((t) => t.id === id);
+      const trip = useFleetStore.getState().trips.find((t) => t.id === id);
       if (!trip) throw new Error('Trip not found');
       return trip;
     },
@@ -155,7 +152,7 @@ export function useMaintenanceRecords() {
     queryKey: queryKeys.maintenance,
     queryFn: async () => {
       await delay();
-      return mock.maintenanceRecords;
+      return useFleetStore.getState().maintenanceRecords;
     },
   });
 }
@@ -165,7 +162,7 @@ export function useMaintenanceRecord(id: string) {
     queryKey: queryKeys.maintenanceRecord(id),
     queryFn: async () => {
       await delay();
-      const record = mock.maintenanceRecords.find((m) => m.id === id);
+      const record = useFleetStore.getState().maintenanceRecords.find((m) => m.id === id);
       if (!record) throw new Error('Maintenance record not found');
       return record;
     },
@@ -178,7 +175,7 @@ export function useFuelRecords() {
     queryKey: queryKeys.fuel,
     queryFn: async () => {
       await delay();
-      return mock.fuelRecords;
+      return useFleetStore.getState().fuelRecords;
     },
   });
 }
@@ -189,7 +186,7 @@ export function useAssignments() {
     queryKey: queryKeys.assignments,
     queryFn: async () => {
       await delay();
-      return mock.assignments;
+      return useFleetStore.getState().assignments;
     },
   });
 }
@@ -200,7 +197,7 @@ export function useUsers() {
     queryKey: queryKeys.users,
     queryFn: async () => {
       await delay();
-      return mock.users;
+      return useFleetStore.getState().drivers;
     },
   });
 }
@@ -211,7 +208,14 @@ export function useDepartments() {
     queryKey: queryKeys.departments,
     queryFn: async () => {
       await delay();
-      return mock.departments;
+      return [
+        { id: 'DEP-001', name: 'Field Operations', head: 'Robert Okello', vehicleCount: 8, driverCount: 12 },
+        { id: 'DEP-002', name: 'Public Health', head: 'Dr. Grace Namusoke', vehicleCount: 6, driverCount: 8 },
+        { id: 'DEP-003', name: 'Water & Sanitation', head: 'James Kato', vehicleCount: 5, driverCount: 6 },
+        { id: 'DEP-004', name: 'Administration', head: 'Sarah Nalwoga', vehicleCount: 4, driverCount: 3 },
+        { id: 'DEP-005', name: 'Logistics', head: 'David Ssemwanga', vehicleCount: 3, driverCount: 4 },
+        { id: 'DEP-006', name: 'Programmes', head: 'Agnes Kiconco', vehicleCount: 4, driverCount: 5 },
+      ];
     },
   });
 }
@@ -222,7 +226,7 @@ export function useNotifications() {
     queryKey: queryKeys.notifications,
     queryFn: async () => {
       await delay();
-      return mock.notifications;
+      return useFleetStore.getState().notifications;
     },
   });
 }
@@ -232,9 +236,8 @@ export function useMarkNotificationRead() {
   return useMutation({
     mutationFn: async (id: string) => {
       await delay(100);
-      const notification = mock.notifications.find((n) => n.id === id);
-      if (notification) notification.read = true;
-      return notification;
+      useFleetStore.getState().markNotificationRead(id);
+      return id;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.notifications });
@@ -248,7 +251,12 @@ export function useAttentionItems() {
     queryKey: queryKeys.attention,
     queryFn: async () => {
       await delay();
-      return mock.attentionItems;
+      return [
+        { id: 'ATT-001', category: 'Maintenance', title: 'UAT 706P — Service overdue', detail: 'Vehicle is 2,000 km past its service interval', severity: 'high' as const },
+        { id: 'ATT-002', category: 'Insurance', title: 'UBG 442D — Insurance expiring', detail: 'Insurance expires in 15 days', severity: 'medium' as const },
+        { id: 'ATT-003', category: 'License', title: 'James Kato — License expiring', detail: 'Driver license expires in 30 days', severity: 'medium' as const },
+        { id: 'ATT-004', category: 'Fuel', title: 'Fuel cost above budget', detail: 'Monthly fuel spend is 12% over budget', severity: 'low' as const },
+      ];
     },
   });
 }
@@ -259,7 +267,13 @@ export function useActivity() {
     queryKey: queryKeys.activity,
     queryFn: async () => {
       await delay();
-      return mock.activity;
+      return [
+        { id: 'ACT-001', message: 'Robert Okello started trip TRP-0914 to Mbale District', timestamp: 'Today, 06:30', type: 'trip' as const },
+        { id: 'ACT-002', message: 'Sarah Atim started trip TRP-0913 to Luwero District', timestamp: 'Today, 07:00', type: 'trip' as const },
+        { id: 'ACT-003', message: 'Maintenance completed for UBD 990L', timestamp: 'Yesterday, 16:00', type: 'maintenance' as const },
+        { id: 'ACT-004', message: 'New vehicle request REQ-0248 from Dr. Grace Namusoke', timestamp: 'Yesterday, 14:30', type: 'request' as const },
+        { id: 'ACT-005', message: 'Fuel record added for UAX 482C — 65L', timestamp: 'Yesterday, 12:15', type: 'fuel' as const },
+      ];
     },
   });
 }
@@ -270,7 +284,11 @@ export function useExpenses() {
     queryKey: queryKeys.expenses,
     queryFn: async () => {
       await delay();
-      return mock.expenses;
+      return [
+        { id: 'EXP-001', vehicle: 'UAX 482C', category: 'Fuel', amount: 338000, date: '18 Jul 2024', description: 'Diesel refill', recordedBy: 'Robert Okello' },
+        { id: 'EXP-002', vehicle: 'UAZ 881M', category: 'Fuel', amount: 249600, date: '18 Jul 2024', description: 'Petrol refill', recordedBy: 'Sarah Atim' },
+        { id: 'EXP-003', vehicle: 'UAT 706P', category: 'Maintenance', amount: 485000, date: '12 Jun 2024', description: 'Full service', recordedBy: 'Fleet Manager' },
+      ];
     },
   });
 }
@@ -281,7 +299,11 @@ export function useReports() {
     queryKey: queryKeys.reports,
     queryFn: async () => {
       await delay();
-      return mock.reports;
+      return [
+        { id: 'RPT-001', type: 'Vehicle utilization' as const, title: 'Monthly Vehicle Utilization Report', description: 'Comprehensive fleet utilization analysis', generatedDate: '01 Jul 2024', period: 'June 2024' },
+        { id: 'RPT-002', type: 'Fuel consumption' as const, title: 'Fuel Consumption Report', description: 'Fuel usage and cost analysis', generatedDate: '01 Jul 2024', period: 'June 2024' },
+        { id: 'RPT-003', type: 'Maintenance costs' as const, title: 'Maintenance Cost Report', description: 'Maintenance expenditure analysis', generatedDate: '01 Jul 2024', period: 'June 2024' },
+      ];
     },
   });
 }
