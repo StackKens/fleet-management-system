@@ -142,7 +142,7 @@ async function getTripSummary(filters = {}) {
 }
 
 // Driver activity report — trips and distance per driver
-async function getActivityActivity(filters = {}) {
+async function getDriverActivity(filters = {}) {
   const { startDate, endDate } = filters;
 
   const trips = await prisma.trip.findMany({
