@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, ClipboardList, Search, Check, X, Eye } from 'lucide-react';
+import { Plus, ClipboardList, Search, Check, X, Eye, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -15,7 +15,7 @@ import { Pagination } from '@/components/ui/pagination';
 import { Modal } from '@/components/ui/modal';
 import { useAuth } from '@/contexts/auth-context';
 import { useFleetStore } from '@/stores/fleet-store';
-import { useRequests } from '@/hooks/use-fleet-data';
+import { useRequests, useVehicles, useDrivers } from '@/hooks/use-fleet-data';
 import { toast } from '@/hooks/use-toast';
 import type { RequestStatus, VehicleRequest } from '@/data/types';
 
@@ -29,7 +29,11 @@ const statusVariant: Record<RequestStatus, 'warning' | 'success' | 'danger' | 'd
 export default function Requests() {
   const { user } = useAuth();
   const { data: requests, isLoading } = useRequests();
+  const { data: vehicles } = useVehicles();
+  const { data: drivers } = useDrivers();
   const updateRequestStatus = useFleetStore((s) => s.updateRequestStatus);
+  const addTrip = useFleetStore((s) => s.addTrip);
+  const updateVehicle = useFleetStore((s) => s.updateVehicle);
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -38,6 +42,10 @@ export default function Requests() {
   const [reviewModal, setReviewModal] = useState<{ request: VehicleRequest; action: 'approve' | 'decline' } | null>(null);
   const [reviewReason, setReviewReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [assignModal, setAssignModal] = useState<VehicleRequest | null>(null);
+  const [selectedVehicle, setSelectedVehicle] = useState('');
+  const [selectedDriver, setSelectedDriver] = useState('');
+  const [assigning, setAssigning] = useState(false);
   const perPage = 8;
 
   const filtered = (requests ?? []).filter((r) => {
@@ -80,6 +88,54 @@ export default function Requests() {
       description: `${reviewModal.request.id} has been ${newStatus.toLowerCase()}.`,
     });
   };
+
+  const handleAssign = async () => {
+    if (!assignModal || !selectedVehicle || !selectedDriver) return;
+
+    setAssigning(true);
+    await new Promise((resolve) => setTimeout(resolve, 600));
+
+    // Create a trip
+    addTrip({
+      vehicle: selectedVehicle,
+      driver: selectedDriver,
+      destination: assignModal.destination,
+      departure: `${assignModal.startDate}, 08:00`,
+      expectedReturn: `${assignModal.endDate}, 18:00`,
+      purpose: assignModal.purpose,
+      mileageStart: vehicles?.find((v) => v.registration === selectedVehicle)?.mileage ?? 0,
+    });
+
+    // Update the request with assigned vehicle and driver
+    useFleetStore.getState().updateRequestStatus(assignModal.id, 'Approved', user?.name);
+    const request = useFleetStore.getState().requests.find((r) => r.id === assignModal.id);
+    if (request) {
+      useFleetStore.setState({
+        requests: useFleetStore.getState().requests.map((r) =>
+          r.id === assignModal.id ? { ...r, vehicle: selectedVehicle, driver: selectedDriver } : r,
+        ),
+      });
+    }
+
+    // Update vehicle status
+    const vehicle = vehicles?.find((v) => v.registration === selectedVehicle);
+    if (vehicle) {
+      updateVehicle(vehicle.id, { status: 'Assigned', driver: selectedDriver });
+    }
+
+    setAssigning(false);
+    setAssignModal(null);
+    setSelectedVehicle('');
+    setSelectedDriver('');
+
+    toast({
+      title: 'Vehicle Assigned',
+      description: `${selectedVehicle} assigned to ${selectedDriver} for request ${assignModal.id}.`,
+    });
+  };
+
+  const availableVehicles = (vehicles ?? []).filter((v) => v.status === 'Available');
+  const availableDrivers = (drivers ?? []).filter((d) => d.status === 'Active' && !d.assignedVehicle);
 
   return (
     <div className="mx-auto max-w-[1520px] px-5 py-7 sm:px-8 lg:px-10">
@@ -184,6 +240,26 @@ export default function Requests() {
                           >
                             <X className="h-3 w-3" />
                             Decline
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setSelectedRequest(request)}
+                            className="h-7 px-2 text-[11px]"
+                          >
+                            <Eye className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ) : request.status === 'Approved' && !request.vehicle ? (
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => { setAssignModal(request); setSelectedVehicle(''); setSelectedDriver(''); }}
+                            className="h-7 px-2 text-[11px]"
+                          >
+                            <UserPlus className="h-3 w-3" />
+                            Assign
                           </Button>
                           <Button
                             size="sm"
@@ -327,6 +403,76 @@ export default function Requests() {
                 rows={3}
               />
             </FormField>
+          </div>
+        )}
+      </Modal>
+
+      {/* Assignment Modal */}
+      <Modal
+        open={!!assignModal}
+        onClose={() => { setAssignModal(null); setSelectedVehicle(''); setSelectedDriver(''); }}
+        title={assignModal ? `Assign Vehicle & Driver — ${assignModal.id}` : ''}
+        description={assignModal ? `${assignModal.requester} — ${assignModal.destination}` : undefined}
+        footer={
+          <>
+            <Button variant="outline" onClick={() => { setAssignModal(null); setSelectedVehicle(''); setSelectedDriver(''); }}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAssign}
+              disabled={!selectedVehicle || !selectedDriver || assigning}
+            >
+              {assigning ? 'Assigning...' : 'Assign'}
+            </Button>
+          </>
+        }
+      >
+        {assignModal && (
+          <div className="space-y-4">
+            <div className="rounded-md border border-border bg-muted/30 px-4 py-3 text-sm">
+              <p className="font-medium text-foreground">{assignModal.requester}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {assignModal.destination} · {assignModal.startDate} — {assignModal.endDate}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">{assignModal.purpose}</p>
+            </div>
+
+            <FormField label="Select Vehicle" required>
+              <Select value={selectedVehicle} onChange={(e) => setSelectedVehicle(e.target.value)}>
+                <option value="">Choose available vehicle...</option>
+                {availableVehicles.map((v) => (
+                  <option key={v.id} value={v.registration}>
+                    {v.registration} — {v.make} {v.model} ({v.vehicleType})
+                  </option>
+                ))}
+              </Select>
+              {availableVehicles.length === 0 && (
+                <p className="mt-1 text-xs text-destructive">No vehicles currently available</p>
+              )}
+            </FormField>
+
+            <FormField label="Select Driver" required>
+              <Select value={selectedDriver} onChange={(e) => setSelectedDriver(e.target.value)}>
+                <option value="">Choose available driver...</option>
+                {availableDrivers.map((d) => (
+                  <option key={d.id} value={d.name}>
+                    {d.name} — {d.department} (Rating: {d.rating}/5)
+                  </option>
+                ))}
+              </Select>
+              {availableDrivers.length === 0 && (
+                <p className="mt-1 text-xs text-destructive">No drivers currently available</p>
+              )}
+            </FormField>
+
+            {selectedVehicle && selectedDriver && (
+              <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs text-emerald-800">
+                <p className="font-semibold">Ready to assign</p>
+                <p className="mt-1">
+                  {selectedVehicle} will be assigned to {selectedDriver} for {assignModal.startDate} — {assignModal.endDate}
+                </p>
+              </div>
+            )}
           </div>
         )}
       </Modal>

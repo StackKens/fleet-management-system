@@ -1,8 +1,22 @@
-import { Activity } from 'lucide-react';
+import { useState } from 'react';
+import { Activity, Eye, Play, CheckCircle2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Modal } from '@/components/ui/modal';
+import { PageHeader } from '@/components/ui/page-header';
+import { EmptyState } from '@/components/ui/empty-state';
+import { TableLoading } from '@/components/ui/loading-state';
+import { Pagination } from '@/components/ui/pagination';
+import { FormField } from '@/components/ui/form-field';
+import { Input } from '@/components/ui/input';
+import { useAuth } from '@/contexts/auth-context';
+import { useFleetStore } from '@/stores/fleet-store';
 import { useTrips } from '@/hooks/use-fleet-data';
+import { toast } from '@/hooks/use-toast';
+import type { Trip, TripStatus } from '@/data/types';
 
-const statusVariant: Record<string, 'warning' | 'success' | 'danger' | 'info' | 'default'> = {
+const statusVariant: Record<TripStatus, 'warning' | 'success' | 'danger' | 'info' | 'default'> = {
   Scheduled: 'default',
   'On route': 'info',
   Returned: 'success',
@@ -10,50 +24,337 @@ const statusVariant: Record<string, 'warning' | 'success' | 'danger' | 'info' | 
 };
 
 export default function MyTrips() {
-  const { data: trips } = useTrips();
-  const myTrips = trips ?? [];
+  const { user } = useAuth();
+  const { data: trips, isLoading } = useTrips();
+  const updateTripStatus = useFleetStore((s) => s.updateTripStatus);
+
+  const [page, setPage] = useState(1);
+  const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
+  const [startModal, setStartModal] = useState<Trip | null>(null);
+  const [completeModal, setCompleteModal] = useState<Trip | null>(null);
+  const [endMileage, setEndMileage] = useState('');
+  const [fuelUsed, setFuelUsed] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
+  const perPage = 8;
+
+  // Filter to show only current user's trips
+  const myTrips = (trips ?? []).filter(
+    (t) => t.driver === user?.name || t.driver.includes(user?.name?.split(' ')[0] ?? ''),
+  );
+
+  const totalPages = Math.ceil(myTrips.length / perPage);
+  const paginated = myTrips.slice((page - 1) * perPage, page * perPage);
+
+  const activeCount = myTrips.filter((t) => t.status === 'On route').length;
+  const scheduledCount = myTrips.filter((t) => t.status === 'Scheduled').length;
+  const completedCount = myTrips.filter((t) => t.status === 'Returned').length;
+
+  const handleStartTrip = async () => {
+    if (!startModal) return;
+
+    setActionLoading(true);
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    updateTripStatus(startModal.id, 'On route');
+
+    setActionLoading(false);
+    setStartModal(null);
+
+    toast({
+      title: 'Trip Started',
+      description: `Trip ${startModal.id} is now in progress.`,
+    });
+  };
+
+  const handleCompleteTrip = async () => {
+    if (!completeModal) return;
+
+    const mileage = parseInt(endMileage);
+    if (!mileage || mileage <= completeModal.mileageStart) {
+      toast({
+        title: 'Invalid Mileage',
+        description: 'End mileage must be greater than start mileage.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setActionLoading(true);
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    updateTripStatus(completeModal.id, 'Returned', mileage, fuelUsed ? parseFloat(fuelUsed) : undefined);
+
+    setActionLoading(false);
+    setCompleteModal(null);
+    setEndMileage('');
+    setFuelUsed('');
+
+    toast({
+      title: 'Trip Completed',
+      description: `Trip ${completeModal.id} has been completed.`,
+    });
+  };
 
   return (
     <div className="mx-auto max-w-[1520px] px-5 py-7 sm:px-8 lg:px-10">
-      <section className="mb-7 border-b border-border pb-6">
-        <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">Driver Workspace</p>
-        <h2 className="text-2xl font-semibold tracking-tight text-foreground">My Trips</h2>
-        <p className="mt-2 text-sm text-muted-foreground">Your assigned trips and their status</p>
-      </section>
+      <PageHeader
+        title="My Trips"
+        description="Your assigned trips and their status"
+      />
 
-      <section className="border border-border bg-card">
-        <div className="flex items-center justify-between border-b border-border px-5 py-4">
-          <h3 className="text-sm font-semibold text-foreground">All Trips</h3>
-          <span className="text-xs text-muted-foreground">{myTrips.length} trips</span>
-        </div>
-        <div className="divide-y divide-border">
-          {myTrips.length === 0 ? (
-            <div className="px-5 py-12 text-center">
-              <Activity className="mx-auto h-12 w-12 text-muted-foreground" strokeWidth={1.5} />
-              <p className="mt-4 text-sm text-muted-foreground">No trips assigned to you at this time.</p>
+      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Card className="px-4 py-3">
+          <p className="text-xs text-muted-foreground">Total trips</p>
+          <p className="data-mono mt-1 text-xl font-semibold">{myTrips.length}</p>
+        </Card>
+        <Card className="px-4 py-3">
+          <p className="text-xs text-muted-foreground">Scheduled</p>
+          <p className="data-mono mt-1 text-xl font-semibold text-amber-700">{scheduledCount}</p>
+        </Card>
+        <Card className="px-4 py-3">
+          <p className="text-xs text-muted-foreground">On Route</p>
+          <p className="data-mono mt-1 text-xl font-semibold text-sky-700">{activeCount}</p>
+        </Card>
+        <Card className="px-4 py-3">
+          <p className="text-xs text-muted-foreground">Completed</p>
+          <p className="data-mono mt-1 text-xl font-semibold text-emerald-700">{completedCount}</p>
+        </Card>
+      </div>
+
+      <Card>
+        {isLoading ? (
+          <TableLoading />
+        ) : paginated.length === 0 ? (
+          <EmptyState
+            icon={<Activity className="h-5 w-5" />}
+            title="No trips found"
+            description="No trips have been assigned to you yet."
+          />
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground">Trip</th>
+                    <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground">Destination</th>
+                    <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground">Vehicle</th>
+                    <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground">Departure</th>
+                    <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground">Expected Return</th>
+                    <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground">Status</th>
+                    <th className="px-5 py-3 text-right text-xs font-semibold text-muted-foreground">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginated.map((trip) => (
+                    <tr key={trip.id} className="border-b border-border last:border-b-0">
+                      <td className="px-5 py-4">
+                        <span className="data-mono font-semibold text-foreground">{trip.id}</span>
+                      </td>
+                      <td className="px-5 py-4 text-sm font-medium text-foreground">{trip.destination}</td>
+                      <td className="px-5 py-4">
+                        <span className="data-mono text-sm text-foreground">{trip.vehicle}</span>
+                      </td>
+                      <td className="px-5 py-4 text-sm text-muted-foreground">{trip.departure}</td>
+                      <td className="px-5 py-4 text-sm text-muted-foreground">{trip.expectedReturn}</td>
+                      <td className="px-5 py-4">
+                        <Badge variant={statusVariant[trip.status]} dot>
+                          {trip.status}
+                        </Badge>
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setSelectedTrip(trip)}
+                            className="h-7 px-2 text-[11px]"
+                          >
+                            <Eye className="h-3 w-3" />
+                            View
+                          </Button>
+                          {trip.status === 'Scheduled' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setStartModal(trip)}
+                              className="h-7 px-2 text-[11px]"
+                            >
+                              <Play className="h-3 w-3" />
+                              Start Trip
+                            </Button>
+                          )}
+                          {trip.status === 'On route' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => { setCompleteModal(trip); setEndMileage(''); setFuelUsed(''); }}
+                              className="h-7 px-2 text-[11px]"
+                            >
+                              <CheckCircle2 className="h-3 w-3" />
+                              Complete
+                            </Button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          ) : (
-            myTrips.map((trip) => (
-              <div key={trip.id} className="flex items-center justify-between px-5 py-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center border border-border bg-muted/40 text-muted-foreground">
-                    <Activity className="h-4 w-4" strokeWidth={1.8} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">{trip.destination}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {trip.departure} → {trip.expectedReturn}
-                    </p>
-                  </div>
-                </div>
-                <Badge variant={statusVariant[trip.status] ?? 'default'} dot>
-                  {trip.status}
-                </Badge>
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={setPage}
+              totalItems={myTrips.length}
+              perPage={perPage}
+            />
+          </>
+        )}
+      </Card>
+
+      {/* View Trip Modal */}
+      <Modal
+        open={!!selectedTrip}
+        onClose={() => setSelectedTrip(null)}
+        title={selectedTrip ? `Trip ${selectedTrip.id}` : ''}
+        description={selectedTrip ? `${selectedTrip.destination}` : undefined}
+        footer={
+          <Button variant="outline" onClick={() => setSelectedTrip(null)}>
+            Close
+          </Button>
+        }
+      >
+        {selectedTrip && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <p className="text-xs text-muted-foreground">Vehicle</p>
+                <p className="mt-1 data-mono font-medium text-foreground">{selectedTrip.vehicle}</p>
               </div>
-            ))
-          )}
-        </div>
-      </section>
+              <div>
+                <p className="text-xs text-muted-foreground">Driver</p>
+                <p className="mt-1 font-medium text-foreground">{selectedTrip.driver}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Destination</p>
+                <p className="mt-1 font-medium text-foreground">{selectedTrip.destination}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Purpose</p>
+                <p className="mt-1 font-medium text-foreground">{selectedTrip.purpose}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Departure</p>
+                <p className="mt-1 font-medium text-foreground">{selectedTrip.departure}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Expected Return</p>
+                <p className="mt-1 font-medium text-foreground">{selectedTrip.expectedReturn}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Start Mileage</p>
+                <p className="mt-1 data-mono font-medium text-foreground">{selectedTrip.mileageStart.toLocaleString()} km</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">End Mileage</p>
+                <p className="mt-1 data-mono font-medium text-foreground">
+                  {selectedTrip.mileageEnd ? `${selectedTrip.mileageEnd.toLocaleString()} km` : '—'}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Fuel Used</p>
+                <p className="mt-1 data-mono font-medium text-foreground">
+                  {selectedTrip.fuelUsed ? `${selectedTrip.fuelUsed} L` : '—'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Start Trip Modal */}
+      <Modal
+        open={!!startModal}
+        onClose={() => setStartModal(null)}
+        title={startModal ? `Start Trip ${startModal.id}` : ''}
+        description={startModal ? `${startModal.vehicle} — ${startModal.destination}` : undefined}
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setStartModal(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleStartTrip} disabled={actionLoading}>
+              {actionLoading ? 'Starting...' : 'Start Trip'}
+            </Button>
+          </>
+        }
+      >
+        {startModal && (
+          <div className="space-y-4">
+            <div className="rounded-md border border-border bg-muted/30 px-4 py-3 text-sm">
+              <p className="font-medium text-foreground">{startModal.vehicle}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {startModal.destination} · Departure: {startModal.departure}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Start mileage: <span className="data-mono font-medium">{startModal.mileageStart.toLocaleString()} km</span>
+              </p>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Please confirm that you have completed your pre-trip inspection and are ready to begin this trip.
+            </p>
+          </div>
+        )}
+      </Modal>
+
+      {/* Complete Trip Modal */}
+      <Modal
+        open={!!completeModal}
+        onClose={() => { setCompleteModal(null); setEndMileage(''); setFuelUsed(''); }}
+        title={completeModal ? `Complete Trip ${completeModal.id}` : ''}
+        description={completeModal ? `${completeModal.vehicle} — ${completeModal.destination}` : undefined}
+        footer={
+          <>
+            <Button variant="outline" onClick={() => { setCompleteModal(null); setEndMileage(''); setFuelUsed(''); }}>
+              Cancel
+            </Button>
+            <Button onClick={handleCompleteTrip} disabled={actionLoading || !endMileage}>
+              {actionLoading ? 'Completing...' : 'Complete Trip'}
+            </Button>
+          </>
+        }
+      >
+        {completeModal && (
+          <div className="space-y-4">
+            <div className="rounded-md border border-border bg-muted/30 px-4 py-3 text-sm">
+              <p className="font-medium text-foreground">{completeModal.vehicle}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Start mileage: <span className="data-mono font-medium">{completeModal.mileageStart.toLocaleString()} km</span>
+              </p>
+            </div>
+            <FormField label="End Mileage (km)" required>
+              <Input
+                type="number"
+                value={endMileage}
+                onChange={(e) => setEndMileage(e.target.value)}
+                placeholder={`Must be greater than ${completeModal.mileageStart.toLocaleString()}`}
+                min={completeModal.mileageStart + 1}
+              />
+            </FormField>
+            <FormField label="Fuel Used (L)">
+              <Input
+                type="number"
+                value={fuelUsed}
+                onChange={(e) => setFuelUsed(e.target.value)}
+                placeholder="Optional"
+                min="0"
+                step="0.1"
+              />
+            </FormField>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
