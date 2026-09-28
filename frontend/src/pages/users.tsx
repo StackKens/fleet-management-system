@@ -14,6 +14,7 @@ import { Pagination } from '@/components/ui/pagination';
 import { Avatar } from '@/components/ui/avatar';
 import { Modal } from '@/components/ui/modal';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { useFleetStore } from '@/stores/fleet-store';
 import { useUsers } from '@/hooks/use-fleet-data';
 import { toast } from '@/hooks/use-toast';
 import type { UserRole } from '@/data/types';
@@ -93,15 +94,29 @@ export default function Users() {
     setSubmitting(true);
     await new Promise((resolve) => setTimeout(resolve, 500));
 
-    toast({
-      title: 'User Added',
-      description: `${formData.name} has been added successfully.`,
+    addUser({
+      name: formData.name.trim(),
+      phone: formData.phone.trim(),
+      email: formData.email.trim(),
+      licenseNumber: 'N/A',
+      licenseExpiry: 'N/A',
+      status: 'Active',
+      department: formData.department.trim(),
+      assignedVehicle: null,
+      tripsCompleted: 0,
+      rating: 5.0,
+      joinDate: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
     });
 
     setSubmitting(false);
     setAddModal(false);
     setFormData(emptyForm);
     setFormErrors({});
+
+    toast({
+      title: 'User Added',
+      description: `${formData.name} has been added successfully.`,
+    });
   };
 
   const handleEditUser = async (e: React.FormEvent) => {
@@ -111,19 +126,27 @@ export default function Users() {
     setSubmitting(true);
     await new Promise((resolve) => setTimeout(resolve, 500));
 
-    toast({
-      title: 'User Updated',
-      description: `${formData.name} has been updated successfully.`,
+    updateUser(editUser, {
+      name: formData.name.trim(),
+      phone: formData.phone.trim(),
+      email: formData.email.trim(),
+      department: formData.department.trim(),
     });
 
     setSubmitting(false);
     setEditUser(null);
     setFormData(emptyForm);
     setFormErrors({});
+
+    toast({
+      title: 'User Updated',
+      description: `${formData.name} has been updated successfully.`,
+    });
   };
 
   const handleDelete = () => {
     if (!deleteConfirm) return;
+    deleteUser(deleteConfirm);
     toast({
       title: 'User Deleted',
       description: 'User has been removed from the system.',
