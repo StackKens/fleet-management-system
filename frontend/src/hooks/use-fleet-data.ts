@@ -197,7 +197,18 @@ export function useUsers() {
     queryKey: queryKeys.users,
     queryFn: async () => {
       await delay();
-      return useFleetStore.getState().drivers;
+      const drivers = useFleetStore.getState().drivers;
+      return drivers.map((d) => ({
+        id: d.id,
+        name: d.name,
+        email: d.email,
+        role: (d.department === 'Administration' ? 'Admin' : d.department === 'Field Operations' ? 'Driver' : 'Staff') as 'Admin' | 'Fleet Manager' | 'Driver' | 'Staff' | 'Supervisor',
+        department: d.department,
+        phone: d.phone,
+        status: d.status === 'Active' ? 'Active' as const : 'Inactive' as const,
+        lastLogin: 'Today, 09:00',
+        joinDate: d.joinDate,
+      }));
     },
   });
 }

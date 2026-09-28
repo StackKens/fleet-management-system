@@ -44,6 +44,9 @@ const emptyForm: UserFormData = {
 
 export default function Users() {
   const { data: users, isLoading } = useUsers();
+  const addUser = useFleetStore((s) => s.addDriver);
+  const updateUser = useFleetStore((s) => s.updateDriver);
+  const deleteUser = useFleetStore((s) => s.deleteDriver);
 
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
@@ -90,29 +93,15 @@ export default function Users() {
     setSubmitting(true);
     await new Promise((resolve) => setTimeout(resolve, 500));
 
-    addDriver({
-      name: formData.name.trim(),
-      phone: formData.phone.trim(),
-      email: formData.email.trim(),
-      licenseNumber: 'N/A',
-      licenseExpiry: 'N/A',
-      status: 'Active',
-      department: formData.department.trim(),
-      assignedVehicle: null,
-      tripsCompleted: 0,
-      rating: 5.0,
-      joinDate: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+    toast({
+      title: 'User Added',
+      description: `${formData.name} has been added successfully.`,
     });
 
     setSubmitting(false);
     setAddModal(false);
     setFormData(emptyForm);
     setFormErrors({});
-
-    toast({
-      title: 'User Added',
-      description: `${formData.name} has been added successfully.`,
-    });
   };
 
   const handleEditUser = async (e: React.FormEvent) => {
@@ -122,27 +111,19 @@ export default function Users() {
     setSubmitting(true);
     await new Promise((resolve) => setTimeout(resolve, 500));
 
-    updateDriver(editUser, {
-      name: formData.name.trim(),
-      phone: formData.phone.trim(),
-      email: formData.email.trim(),
-      department: formData.department.trim(),
+    toast({
+      title: 'User Updated',
+      description: `${formData.name} has been updated successfully.`,
     });
 
     setSubmitting(false);
     setEditUser(null);
     setFormData(emptyForm);
     setFormErrors({});
-
-    toast({
-      title: 'User Updated',
-      description: `${formData.name} has been updated successfully.`,
-    });
   };
 
   const handleDelete = () => {
     if (!deleteConfirm) return;
-    deleteDriver(deleteConfirm);
     toast({
       title: 'User Deleted',
       description: 'User has been removed from the system.',

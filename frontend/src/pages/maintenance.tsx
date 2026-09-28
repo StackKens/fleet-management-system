@@ -88,8 +88,6 @@ export default function Maintenance() {
   const inProgressCount = (records ?? []).filter((r) => r.status === 'In progress').length;
   const scheduledCount = (records ?? []).filter((r) => r.status === 'Scheduled').length;
 
-  const editingRecord = editRecord ? (records ?? []).find((r) => r.id === editRecord) : null;
-
   const validateForm = (): boolean => {
     const errors: Partial<MaintenanceFormData> = {};
     if (!formData.vehicle) errors.vehicle = 'Vehicle is required';

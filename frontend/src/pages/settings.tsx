@@ -30,7 +30,7 @@ export default function Settings() {
     addNotification({
       type: 'system',
       title: 'Settings Updated',
-      description: 'System settings have been saved successfully.',
+      message: 'System settings have been saved successfully.',
       link: '/settings',
     });
 
