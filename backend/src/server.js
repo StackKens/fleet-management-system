@@ -31,6 +31,15 @@ app.get('/', (req, res) => {
 // Authentication routes — register, login, get current user
 app.use('/api/auth', require('./routes/auth.routes'));
 
+// Protected test route — only accessible with valid token
+app.get('/api/protected', require('./middleware/auth'), (req, res) => {
+  res.json({
+    success: true,
+    message: 'You have access to this protected route',
+    user: { id: req.userId, name: req.userName, role: req.userRole },
+  });
+});
+
 // ─── Error Handler ────────────────────────────────────────────────────────────
 // This must be last — catches all errors from routes above
 app.use(errorHandler);
