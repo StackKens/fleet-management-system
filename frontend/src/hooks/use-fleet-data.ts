@@ -255,12 +255,7 @@ export function useAttentionItems() {
     queryKey: queryKeys.attention,
     queryFn: async () => {
       await delay();
-      return [
-        { id: 'ATT-001', category: 'Maintenance', title: 'UAT 706P — Service overdue', detail: 'Vehicle is 2,000 km past its service interval', severity: 'high' as const },
-        { id: 'ATT-002', category: 'Insurance', title: 'UBG 442D — Insurance expiring', detail: 'Insurance expires in 15 days', severity: 'medium' as const },
-        { id: 'ATT-003', category: 'License', title: 'James Kato — License expiring', detail: 'Driver license expires in 30 days', severity: 'medium' as const },
-        { id: 'ATT-004', category: 'Fuel', title: 'Fuel cost above budget', detail: 'Monthly fuel spend is 12% over budget', severity: 'low' as const },
-      ];
+      return useFleetStore.getState().attentionItems ?? [];
     },
   });
 }
@@ -271,13 +266,7 @@ export function useActivity() {
     queryKey: queryKeys.activity,
     queryFn: async () => {
       await delay();
-      return [
-        { id: 'ACT-001', message: 'Robert Okello started trip TRP-0914 to Mbale District', timestamp: 'Today, 06:30', type: 'trip' as const },
-        { id: 'ACT-002', message: 'Sarah Atim started trip TRP-0913 to Luwero District', timestamp: 'Today, 07:00', type: 'trip' as const },
-        { id: 'ACT-003', message: 'Maintenance completed for UBD 990L', timestamp: 'Yesterday, 16:00', type: 'maintenance' as const },
-        { id: 'ACT-004', message: 'New vehicle request REQ-0248 from Dr. Grace Namusoke', timestamp: 'Yesterday, 14:30', type: 'request' as const },
-        { id: 'ACT-005', message: 'Fuel record added for UAX 482C — 65L', timestamp: 'Yesterday, 12:15', type: 'fuel' as const },
-      ];
+      return useFleetStore.getState().activity ?? [];
     },
   });
 }
@@ -288,11 +277,7 @@ export function useExpenses() {
     queryKey: queryKeys.expenses,
     queryFn: async () => {
       await delay();
-      return [
-        { id: 'EXP-001', vehicle: 'UAX 482C', category: 'Fuel', amount: 338000, date: '18 Jul 2024', description: 'Diesel refill', recordedBy: 'Robert Okello' },
-        { id: 'EXP-002', vehicle: 'UAZ 881M', category: 'Fuel', amount: 249600, date: '18 Jul 2024', description: 'Petrol refill', recordedBy: 'Sarah Atim' },
-        { id: 'EXP-003', vehicle: 'UAT 706P', category: 'Maintenance', amount: 485000, date: '12 Jun 2024', description: 'Full service', recordedBy: 'Fleet Manager' },
-      ];
+      return useFleetStore.getState().expenses ?? [];
     },
   });
 }
@@ -325,11 +310,7 @@ export function useReports() {
     queryKey: queryKeys.reports,
     queryFn: async () => {
       await delay();
-      return [
-        { id: 'RPT-001', type: 'Vehicle utilization' as const, title: 'Monthly Vehicle Utilization Report', description: 'Comprehensive fleet utilization analysis', generatedDate: '01 Jul 2024', period: 'June 2024' },
-        { id: 'RPT-002', type: 'Fuel consumption' as const, title: 'Fuel Consumption Report', description: 'Fuel usage and cost analysis', generatedDate: '01 Jul 2024', period: 'June 2024' },
-        { id: 'RPT-003', type: 'Maintenance costs' as const, title: 'Maintenance Cost Report', description: 'Maintenance expenditure analysis', generatedDate: '01 Jul 2024', period: 'June 2024' },
-      ];
+      return useFleetStore.getState().reports ?? [];
     },
   });
 }

@@ -11,6 +11,10 @@ import type {
   Department,
   Inspection,
   Issue,
+  Expense,
+  AttentionItem,
+  ActivityEvent,
+  Report,
   VehicleStatus,
   RequestStatus,
   TripStatus,
@@ -27,6 +31,10 @@ import {
   fuelRecords as mockFuel,
   assignments as mockAssignments,
   notifications as mockNotifications,
+  expenses as mockExpenses,
+  attentionItems as mockAttentionItems,
+  activity as mockActivity,
+  reports as mockReports,
 } from '@/data/mock-data';
 
 const mockDepartments: Department[] = [
@@ -79,6 +87,10 @@ type FleetState = {
   departments: Department[];
   inspections: Inspection[];
   issues: Issue[];
+  expenses: Expense[];
+  attentionItems: AttentionItem[];
+  activity: ActivityEvent[];
+  reports: Report[];
 
   // Request actions
   addRequest: (request: Omit<VehicleRequest, 'id' | 'requestedDate' | 'status' | 'vehicle' | 'driver' | 'reviewedBy' | 'reviewedDate'>) => VehicleRequest;
@@ -153,6 +165,10 @@ export const useFleetStore = create<FleetState>((set, get) => ({
   departments: mockDepartments,
   inspections: mockInspections,
   issues: mockIssues,
+  expenses: mockExpenses,
+  attentionItems: mockAttentionItems,
+  activity: mockActivity,
+  reports: mockReports,
 
   // ─── Request Actions ──────────────────────────────────────────────────────
 
