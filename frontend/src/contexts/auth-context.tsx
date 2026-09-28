@@ -1,12 +1,14 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import type { UserRole } from '@/data/types';
+import { getCapabilitiesForRole, type Capability } from '@/data/capabilities';
 
-type AuthUser = {
+export type AuthUser = {
   id: string;
   name: string;
   email: string;
   role: UserRole;
   department: string;
+  capabilities: Capability[];
 };
 
 type AuthContextType = {
@@ -14,11 +16,12 @@ type AuthContextType = {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
+  hasCapability: (capability: Capability) => boolean;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const MOCK_USERS: (AuthUser & { password: string })[] = [
+const MOCK_USERS: (Omit<AuthUser, 'capabilities'> & { password: string })[] = [
   { id: 'USR-001', name: 'Fleet Manager', email: 'fleet.manager@fleet.ug', password: 'admin123', role: 'Fleet Manager', department: 'Administration' },
   { id: 'USR-002', name: 'System Administrator', email: 'admin@fleet.ug', password: 'admin123', role: 'Admin', department: 'Administration' },
   { id: 'USR-003', name: 'Dr. Grace Namusoke', email: 'grace.namusoke@fleet.ug', password: 'staff123', role: 'Staff', department: 'Public Health' },
@@ -36,7 +39,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
     if (found) {
       const { password: _, ...authUser } = found;
-      setUser(authUser);
+      const capabilities = getCapabilitiesForRole(authUser.role);
+      setUser({ ...authUser, capabilities });
       return true;
     }
     return false;
@@ -46,8 +50,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
+  const hasCapability = (capability: Capability): boolean => {
+    if (!user) return false;
+    return user.capabilities.includes(capability);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, logout, hasCapability }}>
       {children}
     </AuthContext.Provider>
   );
