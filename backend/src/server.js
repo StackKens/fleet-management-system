@@ -28,6 +28,9 @@ app.get('/', (req, res) => {
   res.json({ success: true, message: 'Fleet Management API is running' });
 });
 
+// Authentication routes — register, login, get current user
+app.use('/api/auth', require('./routes/auth.routes'));
+
 // ─── Error Handler ────────────────────────────────────────────────────────────
 // This must be last — catches all errors from routes above
 app.use(errorHandler);
