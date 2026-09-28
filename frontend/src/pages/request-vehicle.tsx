@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useLocation } from 'wouter';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, Truck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { FormField } from '@/components/ui/form-field';
+import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/auth-context';
 import { useFleetStore } from '@/stores/fleet-store';
+import { useVehicles } from '@/hooks/use-fleet-data';
 import { toast } from '@/hooks/use-toast';
 
 type FormErrors = {
@@ -20,7 +22,10 @@ type FormErrors = {
 export default function RequestVehicle() {
   const { user } = useAuth();
   const addRequest = useFleetStore((s) => s.addRequest);
+  const { data: vehicles } = useVehicles();
   const [, setLocation] = useLocation();
+
+  const availableVehicles = (vehicles ?? []).filter((v) => v.status === 'Available');
 
   const [destination, setDestination] = useState('');
   const [purpose, setPurpose] = useState('');
@@ -251,6 +256,46 @@ export default function RequestVehicle() {
               </div>
             </div>
           </form>
+        </section>
+
+        <section className="border border-border bg-card">
+          <div className="border-b border-border px-5 py-4">
+            <h3 className="text-sm font-semibold text-foreground">Available Vehicles</h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {availableVehicles.length} vehicle{availableVehicles.length !== 1 ? 's' : ''} ready for assignment
+            </p>
+          </div>
+          <div className="divide-y divide-border">
+            {availableVehicles.length === 0 ? (
+              <div className="px-5 py-6 text-center">
+                <Truck className="mx-auto h-8 w-8 text-muted-foreground" strokeWidth={1.5} />
+                <p className="mt-2 text-xs text-muted-foreground">No vehicles currently available</p>
+              </div>
+            ) : (
+              availableVehicles.map((vehicle) => (
+                <div key={vehicle.id} className="px-5 py-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="data-mono text-xs font-semibold text-foreground">{vehicle.registration}</p>
+                      <p className="mt-0.5 text-[11px] text-muted-foreground">
+                        {vehicle.make} {vehicle.model} · {vehicle.vehicleType}
+                      </p>
+                    </div>
+                    <Badge variant="success" dot>
+                      Available
+                    </Badge>
+                  </div>
+                  <div className="mt-1.5 flex items-center gap-3 text-[10px] text-muted-foreground">
+                    <span>{vehicle.fuelType}</span>
+                    <span>·</span>
+                    <span>{vehicle.mileage.toLocaleString()} km</span>
+                    <span>·</span>
+                    <span>{vehicle.department}</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </section>
 
         <section className="border border-border bg-card">
