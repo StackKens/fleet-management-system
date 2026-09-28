@@ -46,6 +46,9 @@ app.use('/api/users', require('./routes/user.routes'));
 // Department management routes
 app.use('/api/departments', require('./routes/department.routes'));
 
+// Vehicle management routes
+app.use('/api/vehicles', require('./routes/vehicle.routes'));
+
 // ─── Error Handler ────────────────────────────────────────────────────────────
 // This must be last — catches all errors from routes above
 app.use(errorHandler);
