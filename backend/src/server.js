@@ -40,6 +40,12 @@ app.get('/api/protected', require('./middleware/auth'), (req, res) => {
   });
 });
 
+// User management routes
+app.use('/api/users', require('./routes/user.routes'));
+
+// Department management routes
+app.use('/api/departments', require('./routes/department.routes'));
+
 // ─── Error Handler ────────────────────────────────────────────────────────────
 // This must be last — catches all errors from routes above
 app.use(errorHandler);
