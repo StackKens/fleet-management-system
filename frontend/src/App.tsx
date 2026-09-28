@@ -4,63 +4,89 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { FleetShell } from '@/components/fleet-shell';
+import { AuthProvider, useAuth } from '@/contexts/auth-context';
 import Dashboard from '@/pages/dashboard';
+import Vehicles from '@/pages/vehicles';
+import Drivers from '@/pages/drivers';
+import Requests from '@/pages/requests';
+import Assignments from '@/pages/assignments';
+import Trips from '@/pages/trips';
+import Maintenance from '@/pages/maintenance';
+import Fuel from '@/pages/fuel';
+import Reports from '@/pages/reports';
+import Users from '@/pages/users';
+import Settings from '@/pages/settings';
+import Login from '@/pages/login';
 import NotFound from '@/pages/not-found';
-import Placeholder from '@/pages/placeholder';
 import {
   Route,
   Switch,
   useLocation,
   Router as WouterRouter,
+  Redirect,
 } from 'wouter';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30000,
+      retry: 1,
+    },
+  },
+});
 
 function Home() {
   return <Dashboard />;
 }
 
+function ProtectedRoute({ children }: { children: ReactNode }) {
+  const { isAuthenticated } = useAuth();
+
+  if (!isAuthenticated) {
+    return <Redirect to="/login" />;
+  }
+
+  return <>{children}</>;
+}
+
+function LoginRoute() {
+  const { isAuthenticated } = useAuth();
+
+  if (isAuthenticated) {
+    return <Redirect to="/dashboard" />;
+  }
+
+  return <Login />;
+}
+
 function Router() {
   return (
-    <FleetShell>
-      <RoutedErrorBoundary>
-        <Switch>
-        <Route path="/" component={Home} />
-        <Route path="/dashboard" component={Dashboard} />
-        <Route path="/vehicles">
-          <Placeholder title="Vehicles" description="Vehicle records, availability, mileage and operating status will be managed here." phase="Next phase" />
-        </Route>
-        <Route path="/requests">
-          <Placeholder title="Requests" description="Request intake, review and approval workflows will be managed here." phase="Next phase" />
-        </Route>
-        <Route path="/assignments">
-          <Placeholder title="Assignments" description="Vehicle and driver allocation for approved requests will be managed here." phase="Next phase" />
-        </Route>
-        <Route path="/drivers">
-          <Placeholder title="Drivers" description="Driver profiles, licensing and assignment history will be managed here." phase="Next phase" />
-        </Route>
-        <Route path="/trips">
-          <Placeholder title="Trips" description="Trip scheduling, dispatch status and return tracking will be managed here." phase="Next phase" />
-        </Route>
-        <Route path="/maintenance">
-          <Placeholder title="Maintenance" description="Workshop bookings, service history and vehicle readiness will be managed here." phase="Next phase" />
-        </Route>
-        <Route path="/fuel">
-          <Placeholder title="Fuel" description="Fuel issues, consumption records and cost controls will be managed here." phase="Next phase" />
-        </Route>
-        <Route path="/reports">
-          <Placeholder title="Reports" description="Fleet performance and operational reports will be available here." phase="Next phase" />
-        </Route>
-        <Route path="/users">
-          <Placeholder title="Users" description="Workspace users, roles and access controls will be managed here." phase="Next phase" />
-        </Route>
-        <Route path="/settings">
-          <Placeholder title="Settings" description="Fleet policies, operating defaults and workspace settings will be managed here." phase="Next phase" />
-        </Route>
-        <Route component={NotFound} />
-        </Switch>
-      </RoutedErrorBoundary>
-    </FleetShell>
+    <Switch>
+      <Route path="/login" component={LoginRoute} />
+      <Route>
+        <ProtectedRoute>
+          <FleetShell>
+            <RoutedErrorBoundary>
+              <Switch>
+                <Route path="/" component={Home} />
+                <Route path="/dashboard" component={Dashboard} />
+                <Route path="/vehicles" component={Vehicles} />
+                <Route path="/drivers" component={Drivers} />
+                <Route path="/requests" component={Requests} />
+                <Route path="/assignments" component={Assignments} />
+                <Route path="/trips" component={Trips} />
+                <Route path="/maintenance" component={Maintenance} />
+                <Route path="/fuel" component={Fuel} />
+                <Route path="/reports" component={Reports} />
+                <Route path="/users" component={Users} />
+                <Route path="/settings" component={Settings} />
+                <Route component={NotFound} />
+              </Switch>
+            </RoutedErrorBoundary>
+          </FleetShell>
+        </ProtectedRoute>
+      </Route>
+    </Switch>
   );
 }
 
@@ -72,12 +98,14 @@ function RoutedErrorBoundary({ children }: { children: ReactNode }) {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-          <Router />
-        </WouterRouter>
-        <Toaster />
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
+            <Router />
+          </WouterRouter>
+          <Toaster />
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

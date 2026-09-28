@@ -9,6 +9,7 @@ import {
   ClipboardList,
   Fuel,
   Gauge,
+  LogOut,
   Menu,
   Settings,
   ShieldCheck,
@@ -18,32 +19,31 @@ import {
   Wrench,
   X,
 } from 'lucide-react';
+import { useNotifications } from '@/hooks/use-fleet-data';
+import { useAuth } from '@/contexts/auth-context';
+import { Avatar } from '@/components/ui/avatar';
+import type { UserRole } from '@/data/types';
 
 type NavItem = {
   label: string;
   href: string;
   icon: LucideIcon;
   section?: string;
+  roles?: UserRole[];
 };
 
-const primaryNavigation: NavItem[] = [
-  { label: 'Dashboard', href: '/dashboard', icon: Gauge },
-  { label: 'Vehicles', href: '/vehicles', icon: Truck },
-  { label: 'Requests', href: '/requests', icon: ClipboardList },
-  { label: 'Assignments', href: '/assignments', icon: CarFront },
-  { label: 'Drivers', href: '/drivers', icon: UsersRound },
-  { label: 'Trips', href: '/trips', icon: Activity },
-];
-
-const operationsNavigation: NavItem[] = [
-  { label: 'Maintenance', href: '/maintenance', icon: Wrench },
-  { label: 'Fuel', href: '/fuel', icon: Fuel },
-  { label: 'Reports', href: '/reports', icon: BarChart3 },
-];
-
-const administrationNavigation: NavItem[] = [
-  { label: 'Users', href: '/users', icon: UserRound },
-  { label: 'Settings', href: '/settings', icon: Settings },
+const allNavigation: NavItem[] = [
+  { label: 'Dashboard', href: '/dashboard', icon: Gauge, section: 'Workspace' },
+  { label: 'Vehicles', href: '/vehicles', icon: Truck, section: 'Workspace' },
+  { label: 'Requests', href: '/requests', icon: ClipboardList, section: 'Workspace' },
+  { label: 'Assignments', href: '/assignments', icon: CarFront, section: 'Workspace', roles: ['Admin', 'Fleet Manager', 'Supervisor'] },
+  { label: 'Drivers', href: '/drivers', icon: UsersRound, section: 'Workspace' },
+  { label: 'Trips', href: '/trips', icon: Activity, section: 'Workspace' },
+  { label: 'Maintenance', href: '/maintenance', icon: Wrench, section: 'Operations' },
+  { label: 'Fuel', href: '/fuel', icon: Fuel, section: 'Operations' },
+  { label: 'Reports', href: '/reports', icon: BarChart3, section: 'Operations' },
+  { label: 'Users', href: '/users', icon: UserRound, section: 'Administration', roles: ['Admin', 'Fleet Manager'] },
+  { label: 'Settings', href: '/settings', icon: Settings, section: 'Administration', roles: ['Admin', 'Fleet Manager'] },
 ];
 
 function NavigationGroup({
@@ -90,6 +90,14 @@ function NavigationGroup({
 
 function Sidebar({ onNavigate }: { onNavigate: () => void }) {
   const [location] = useLocation();
+  const { user } = useAuth();
+
+  const visibleItems = allNavigation.filter(
+    (item) => !item.roles || (user && item.roles.includes(user.role)),
+  );
+
+  const sections = ['Workspace', 'Operations', 'Administration'] as const;
+
   return (
     <aside className="ops-sidebar flex h-full min-h-dvh w-[252px] flex-col border-r border-sidebar-border" aria-label="Fleet Operations navigation">
       <div className="flex h-[76px] items-center gap-3 border-b border-sidebar-border px-6">
@@ -103,17 +111,27 @@ function Sidebar({ onNavigate }: { onNavigate: () => void }) {
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 py-7">
-        <NavigationGroup title="Workspace" items={primaryNavigation} location={location} onNavigate={onNavigate} />
-        <NavigationGroup title="Operations" items={operationsNavigation} location={location} onNavigate={onNavigate} />
-        <NavigationGroup title="Administration" items={administrationNavigation} location={location} onNavigate={onNavigate} />
+        {sections.map((section) => {
+          const items = visibleItems.filter((i) => i.section === section);
+          if (items.length === 0) return null;
+          return (
+            <NavigationGroup
+              key={section}
+              title={section}
+              items={items}
+              location={location}
+              onNavigate={onNavigate}
+            />
+          );
+        })}
       </div>
 
       <div className="border-t border-sidebar-border px-6 py-5">
         <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sidebar-accent text-xs font-semibold text-sidebar-accent-foreground">FM</div>
+          <Avatar name={user?.name ?? 'User'} size="sm" />
           <div className="min-w-0">
-            <p className="truncate text-xs font-semibold text-sidebar-accent-foreground">Fleet Manager</p>
-            <p className="truncate text-[11px] text-sidebar-foreground/50">Kampala operations</p>
+            <p className="truncate text-xs font-semibold text-sidebar-accent-foreground">{user?.name ?? 'User'}</p>
+            <p className="truncate text-[11px] text-sidebar-foreground/50">{user?.role ?? 'Guest'}</p>
           </div>
         </div>
       </div>
@@ -125,7 +143,18 @@ export function FleetShell({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [location] = useLocation();
-  const currentItem = [...primaryNavigation, ...operationsNavigation, ...administrationNavigation].find((item) => item.href === location);
+  const { data: notifications } = useNotifications();
+  const { user, logout } = useAuth();
+
+  const visibleItems = allNavigation.filter(
+    (item) => !item.roles || (user && item.roles.includes(user.role)),
+  );
+  const currentItem = visibleItems.find((item) => item.href === location);
+  const unreadCount = (notifications ?? []).filter((n) => !n.read).length;
+
+  const handleLogout = () => {
+    logout();
+  };
 
   return (
     <div className="ops-shell flex">
@@ -182,26 +211,45 @@ export function FleetShell({ children }: { children: ReactNode }) {
               className="relative flex h-9 w-9 items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground"
             >
               <Bell className="h-[18px] w-[18px]" strokeWidth={1.8} />
-              <span className="absolute right-2 top-1.5 h-1.5 w-1.5 rounded-full bg-destructive" aria-label="2 unread notifications" />
+              {unreadCount > 0 && (
+                <span className="absolute right-2 top-1.5 h-1.5 w-1.5 rounded-full bg-destructive" aria-label={`${unreadCount} unread notifications`} />
+              )}
             </button>
             {notificationsOpen ? (
               <div className="absolute right-5 top-[62px] w-[290px] border border-border bg-card shadow-md sm:right-8" role="status" data-testid="panel-notifications">
                 <div className="border-b border-border px-4 py-3">
                   <p className="text-xs font-semibold text-foreground">Notifications</p>
-                  <p className="mt-1 text-[11px] text-muted-foreground">2 items need review</p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">{unreadCount} item{unreadCount !== 1 ? 's' : ''} need review</p>
                 </div>
-                <div className="divide-y divide-border">
-                  <Link href="/maintenance" onClick={() => setNotificationsOpen(false)} data-testid="link-notification-maintenance" className="block px-4 py-3 text-xs hover:bg-muted/50">
-                    <p className="font-semibold text-foreground">UAT 706P service due</p>
-                    <p className="mt-1 text-[11px] text-muted-foreground">Maintenance attention item</p>
-                  </Link>
-                  <Link href="/requests" onClick={() => setNotificationsOpen(false)} data-testid="link-notification-requests" className="block px-4 py-3 text-xs hover:bg-muted/50">
-                    <p className="font-semibold text-foreground">2 requests need review</p>
-                    <p className="mt-1 text-[11px] text-muted-foreground">Pending operations queue</p>
-                  </Link>
+                <div className="max-h-[300px] divide-y divide-border overflow-y-auto">
+                  {(notifications ?? []).map((notification) => (
+                    <Link
+                      key={notification.id}
+                      href={notification.link}
+                      onClick={() => setNotificationsOpen(false)}
+                      data-testid={`link-notification-${notification.id}`}
+                      className="block px-4 py-3 text-xs hover:bg-muted/50"
+                    >
+                      <p className={`font-semibold ${notification.read ? 'text-muted-foreground' : 'text-foreground'}`}>
+                        {notification.title}
+                      </p>
+                      <p className="mt-1 text-[11px] text-muted-foreground">{notification.message}</p>
+                      <p className="mt-1 text-[10px] text-muted-foreground">{notification.timestamp}</p>
+                    </Link>
+                  ))}
                 </div>
               </div>
             ) : null}
+            <div className="h-7 w-px bg-border" aria-hidden="true" />
+            <button
+              type="button"
+              onClick={handleLogout}
+              aria-label="Sign out"
+              data-testid="button-logout"
+              className="flex h-9 w-9 items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              <LogOut className="h-[18px] w-[18px]" strokeWidth={1.8} />
+            </button>
           </div>
         </header>
         <main className="min-w-0 flex-1">{children}</main>

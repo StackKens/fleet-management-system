@@ -10,51 +10,34 @@ import {
   UserRound,
   Wrench,
 } from 'lucide-react';
-import {
-  activity,
-  attentionItems,
-  requests,
-  trips,
-  vehicleSummary,
-  type ActivityType,
-  type AttentionSeverity,
-  type RequestStatus,
-  type TripStatus,
-} from '@/data/mock-data';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { useActivity, useAttentionItems, useRequests, useTrips, useVehicleSummary } from '@/hooks/use-fleet-data';
+import type { ActivityType, AttentionSeverity } from '@/data/types';
 
 const summaryItems = [
-  { key: 'total', label: 'Total fleet', value: vehicleSummary.total, note: 'registered vehicles' },
-  { key: 'available', label: 'Available', value: vehicleSummary.available, note: 'ready for assignment', tone: 'positive' },
-  { key: 'assigned', label: 'Assigned', value: vehicleSummary.assigned, note: 'currently allocated' },
-  { key: 'inService', label: 'In service', value: vehicleSummary.inService, note: 'at workshop', tone: 'warning' },
-  { key: 'maintenance', label: 'Maintenance', value: vehicleSummary.maintenance, note: 'awaiting attention', tone: 'negative' },
+  { key: 'total', label: 'Total fleet', value: 0, note: 'registered vehicles', tone: 'default' as const },
+  { key: 'available', label: 'Available', value: 0, note: 'ready for assignment', tone: 'positive' as const },
+  { key: 'assigned', label: 'Assigned', value: 0, note: 'currently allocated', tone: 'info' as const },
+  { key: 'inService', label: 'In service', value: 0, note: 'at workshop', tone: 'warning' as const },
+  { key: 'maintenance', label: 'Maintenance', value: 0, note: 'awaiting attention', tone: 'negative' as const },
 ];
 
-function StatusPill({ status }: { status: RequestStatus | TripStatus }) {
-  const classes: Record<string, string> = {
-    Pending: 'bg-amber-50 text-amber-700 border-amber-200',
-    Approved: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    Declined: 'bg-red-50 text-red-700 border-red-200',
-    'On route': 'bg-sky-50 text-sky-700 border-sky-200',
-    Scheduled: 'bg-slate-100 text-slate-600 border-slate-200',
-    Returned: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  };
-  return (
-    <span className={`inline-flex items-center gap-1.5 border px-2 py-1 text-[11px] font-semibold ${classes[status]}`}>
-      <span className="status-dot bg-current" aria-hidden="true" />
-      {status}
-    </span>
-  );
-}
+const statusVariant: Record<string, 'warning' | 'success' | 'danger' | 'info' | 'default'> = {
+  Pending: 'warning',
+  Approved: 'success',
+  Declined: 'danger',
+  'On route': 'info',
+  Scheduled: 'default',
+  Returned: 'success',
+};
 
-function SeverityMark({ severity }: { severity: AttentionSeverity }) {
-  const tone: Record<AttentionSeverity, string> = {
-    high: 'bg-red-600',
-    medium: 'bg-amber-500',
-    low: 'bg-slate-400',
-  };
-  return <span className={`mt-1.5 h-2 w-2 flex-none rounded-full ${tone[severity]}`} aria-label={`${severity} priority`} />;
-}
+const severityTone: Record<AttentionSeverity, string> = {
+  high: 'bg-red-600',
+  medium: 'bg-amber-500',
+  low: 'bg-slate-400',
+};
 
 function ActivityIcon({ type }: { type: ActivityType }) {
   if (type === 'assignment') return <UserRound className="h-4 w-4" strokeWidth={1.8} />;
@@ -65,9 +48,19 @@ function ActivityIcon({ type }: { type: ActivityType }) {
 
 export default function Dashboard() {
   const [refreshed, setRefreshed] = useState('09:14');
+  const { data: summary } = useVehicleSummary();
+  const { data: requests } = useRequests();
+  const { data: attentionItems } = useAttentionItems();
+  const { data: trips } = useTrips();
+  const { data: activity } = useActivity();
+
   const handleRefresh = () => {
     setRefreshed(new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date()));
   };
+
+  const items = summary
+    ? summaryItems.map((item) => ({ ...item, value: summary[item.key as keyof typeof summary] }))
+    : summaryItems;
 
   return (
     <div className="mx-auto max-w-[1520px] px-5 py-7 sm:px-8 lg:px-10">
@@ -79,32 +72,31 @@ export default function Dashboard() {
         </div>
         <div className="flex items-center gap-3">
           <span className="hidden text-[11px] text-muted-foreground sm:inline">Updated {refreshed}</span>
-          <button
-            type="button"
-            onClick={handleRefresh}
-            data-testid="button-refresh-dashboard"
-            className="inline-flex h-9 items-center gap-2 border border-border bg-card px-3 text-xs font-semibold text-foreground transition-colors hover:bg-muted"
-          >
+          <Button variant="outline" size="sm" onClick={handleRefresh} data-testid="button-refresh-dashboard">
             <RefreshCw className="h-3.5 w-3.5" />
             Refresh
-          </button>
-          <Link
-            href="/requests"
-            data-testid="link-new-request"
-            className="inline-flex h-9 items-center gap-2 bg-primary px-3.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            Review requests
-            <ArrowRight className="h-3.5 w-3.5" />
+          </Button>
+          <Link href="/requests" data-testid="link-new-request">
+            <Button size="sm">
+              Review requests
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Button>
           </Link>
         </div>
       </section>
 
       <section aria-label="Fleet summary" className="mb-8 grid grid-cols-2 divide-x divide-border border border-border bg-card sm:grid-cols-5">
-        {summaryItems.map((item) => (
+        {items.map((item) => (
           <div key={item.key} data-testid={`summary-${item.key}`} className="border-b border-border px-4 py-4 last:border-b-0 sm:border-b-0 sm:px-5">
             <p className="text-xs font-medium text-muted-foreground">{item.label}</p>
             <div className="mt-2 flex items-end gap-2">
-              <span className={`data-mono text-[27px] font-semibold leading-none ${item.tone === 'positive' ? 'text-emerald-700' : item.tone === 'warning' ? 'text-amber-700' : item.tone === 'negative' ? 'text-red-700' : 'text-foreground'}`}>{item.value}</span>
+              <span className={`data-mono text-[27px] font-semibold leading-none ${
+                item.tone === 'positive' ? 'text-emerald-700' :
+                item.tone === 'warning' ? 'text-amber-700' :
+                item.tone === 'negative' ? 'text-red-700' :
+                item.tone === 'info' ? 'text-sky-700' :
+                'text-foreground'
+              }`}>{item.value}</span>
               <span className="pb-0.5 text-[10px] text-muted-foreground">vehicles</span>
             </div>
             <p className="mt-2 text-[11px] text-muted-foreground">{item.note}</p>
@@ -123,33 +115,35 @@ export default function Dashboard() {
               View all <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
-          <div className="mobile-scroll">
-            <table className="w-full min-w-[640px] text-left">
-              <thead className="border-b border-border bg-muted/45">
-                <tr className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                  <th className="px-5 py-3 font-semibold">Request</th>
-                  <th className="px-3 py-3 font-semibold">Department</th>
-                  <th className="px-3 py-3 font-semibold">Destination</th>
-                  <th className="px-3 py-3 font-semibold">Date</th>
-                  <th className="px-3 py-3 font-semibold">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {requests.map((request) => (
-                  <tr key={request.id} data-testid={`row-request-${request.id}`} className="text-xs hover:bg-muted/35">
-                    <td className="px-5 py-4">
-                      <p className="font-semibold text-foreground">{request.requester}</p>
-                      <p className="mt-1 data-mono text-[10px] text-muted-foreground">{request.id}</p>
-                    </td>
-                    <td className="px-3 py-4 text-muted-foreground">{request.department}</td>
-                    <td className="px-3 py-4 font-medium text-foreground">{request.destination}</td>
-                    <td className="whitespace-nowrap px-3 py-4 text-muted-foreground">{request.requestedDate}</td>
-                    <td className="px-3 py-4"><StatusPill status={request.status} /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Request</TableHead>
+                <TableHead>Department</TableHead>
+                <TableHead>Destination</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {(requests ?? []).slice(0, 4).map((request) => (
+                <TableRow key={request.id} data-testid={`row-request-${request.id}`}>
+                  <TableCell>
+                    <p className="font-semibold text-foreground">{request.requester}</p>
+                    <p className="mt-1 data-mono text-[10px] text-muted-foreground">{request.id}</p>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{request.department}</TableCell>
+                  <TableCell className="font-medium text-foreground">{request.destination}</TableCell>
+                  <TableCell className="whitespace-nowrap text-muted-foreground">{request.requestedDate}</TableCell>
+                  <TableCell>
+                    <Badge variant={statusVariant[request.status] ?? 'default'} dot>
+                      {request.status}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </section>
 
         <section className="border border-border bg-card" aria-labelledby="attention-heading">
@@ -161,9 +155,9 @@ export default function Dashboard() {
             <TriangleAlert className="h-4 w-4 text-amber-600" strokeWidth={1.8} />
           </div>
           <div className="divide-y divide-border">
-            {attentionItems.map((item) => (
+            {(attentionItems ?? []).map((item) => (
               <div key={item.id} data-testid={`attention-${item.id}`} className="flex gap-3 px-5 py-4">
-                <SeverityMark severity={item.severity} />
+                <span className={`mt-1.5 h-2 w-2 flex-none rounded-full ${severityTone[item.severity]}`} aria-label={`${item.severity} priority`} />
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <p className="text-xs font-semibold text-foreground">{item.title}</p>
@@ -191,33 +185,35 @@ export default function Dashboard() {
               Schedule <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
-          <div className="mobile-scroll">
-            <table className="w-full min-w-[640px] text-left">
-              <thead className="border-b border-border bg-muted/45">
-                <tr className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                  <th className="px-5 py-3 font-semibold">Vehicle / driver</th>
-                  <th className="px-3 py-3 font-semibold">Destination</th>
-                  <th className="px-3 py-3 font-semibold">Departure</th>
-                  <th className="px-3 py-3 font-semibold">Expected return</th>
-                  <th className="px-3 py-3 font-semibold">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {trips.map((trip) => (
-                  <tr key={trip.id} data-testid={`row-trip-${trip.id}`} className="text-xs hover:bg-muted/35">
-                    <td className="px-5 py-4">
-                      <p className="data-mono font-semibold text-foreground">{trip.vehicle}</p>
-                      <p className="mt-1 text-muted-foreground">{trip.driver}</p>
-                    </td>
-                    <td className="px-3 py-4 font-medium text-foreground">{trip.destination}</td>
-                    <td className="whitespace-nowrap px-3 py-4 text-muted-foreground">{trip.departure}</td>
-                    <td className="whitespace-nowrap px-3 py-4 text-muted-foreground">{trip.expectedReturn}</td>
-                    <td className="px-3 py-4"><StatusPill status={trip.status} /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Vehicle / driver</TableHead>
+                <TableHead>Destination</TableHead>
+                <TableHead>Departure</TableHead>
+                <TableHead>Expected return</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {(trips ?? []).slice(0, 3).map((trip) => (
+                <TableRow key={trip.id} data-testid={`row-trip-${trip.id}`}>
+                  <TableCell>
+                    <p className="data-mono font-semibold text-foreground">{trip.vehicle}</p>
+                    <p className="mt-1 text-muted-foreground">{trip.driver}</p>
+                  </TableCell>
+                  <TableCell className="font-medium text-foreground">{trip.destination}</TableCell>
+                  <TableCell className="whitespace-nowrap text-muted-foreground">{trip.departure}</TableCell>
+                  <TableCell className="whitespace-nowrap text-muted-foreground">{trip.expectedReturn}</TableCell>
+                  <TableCell>
+                    <Badge variant={statusVariant[trip.status] ?? 'default'} dot>
+                      {trip.status}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </section>
 
         <section className="border border-border bg-card" aria-labelledby="activity-heading">
@@ -229,7 +225,7 @@ export default function Dashboard() {
             <Clock3 className="h-4 w-4 text-muted-foreground" strokeWidth={1.8} />
           </div>
           <div className="divide-y divide-border">
-            {activity.map((event) => (
+            {(activity ?? []).slice(0, 4).map((event) => (
               <div key={event.id} data-testid={`activity-${event.id}`} className="flex gap-3 px-5 py-4">
                 <div className="flex h-7 w-7 flex-none items-center justify-center border border-border bg-muted/40 text-muted-foreground">
                   <ActivityIcon type={event.type} />
