@@ -1,17 +1,21 @@
 import { useState } from 'react';
-import { Plus, ClipboardList, Search, Check, X } from 'lucide-react';
+import { Plus, ClipboardList, Search, Check, X, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { FormField } from '@/components/ui/form-field';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { TableLoading } from '@/components/ui/loading-state';
 import { Pagination } from '@/components/ui/pagination';
 import { Modal } from '@/components/ui/modal';
-import { useRequests, useUpdateRequestStatus } from '@/hooks/use-fleet-data';
+import { useAuth } from '@/contexts/auth-context';
+import { useFleetStore } from '@/stores/fleet-store';
+import { useRequests } from '@/hooks/use-fleet-data';
 import { toast } from '@/hooks/use-toast';
 import type { RequestStatus, VehicleRequest } from '@/data/types';
 
@@ -23,12 +27,17 @@ const statusVariant: Record<RequestStatus, 'warning' | 'success' | 'danger' | 'd
 };
 
 export default function Requests() {
+  const { user } = useAuth();
   const { data: requests, isLoading } = useRequests();
-  const updateStatus = useUpdateRequestStatus();
+  const updateRequestStatus = useFleetStore((s) => s.updateRequestStatus);
+
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(1);
   const [selectedRequest, setSelectedRequest] = useState<VehicleRequest | null>(null);
+  const [reviewModal, setReviewModal] = useState<{ request: VehicleRequest; action: 'approve' | 'decline' } | null>(null);
+  const [reviewReason, setReviewReason] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const perPage = 8;
 
   const filtered = (requests ?? []).filter((r) => {
@@ -47,26 +56,29 @@ export default function Requests() {
 
   const pendingCount = (requests ?? []).filter((r) => r.status === 'Pending').length;
 
-  const handleStatusUpdate = (request: VehicleRequest, status: RequestStatus) => {
-    updateStatus.mutate(
-      { id: request.id, status },
-      {
-        onSuccess: () => {
-          toast({
-            title: `Request ${status.toLowerCase()}`,
-            description: `${request.id} has been ${status.toLowerCase()}.`,
-          });
-          setSelectedRequest(null);
-        },
-        onError: () => {
-          toast({
-            title: 'Error',
-            description: 'Failed to update request status.',
-            variant: 'destructive',
-          });
-        },
-      },
-    );
+  const handleReview = (request: VehicleRequest, action: 'approve' | 'decline') => {
+    setReviewModal({ request, action });
+    setReviewReason('');
+  };
+
+  const handleSubmitReview = async () => {
+    if (!reviewModal) return;
+
+    setSubmitting(true);
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    const newStatus: RequestStatus = reviewModal.action === 'approve' ? 'Approved' : 'Declined';
+    updateRequestStatus(reviewModal.request.id, newStatus, user?.name, reviewReason || undefined);
+
+    setSubmitting(false);
+    setReviewModal(null);
+    setSelectedRequest(null);
+    setReviewReason('');
+
+    toast({
+      title: `Request ${newStatus}`,
+      description: `${reviewModal.request.id} has been ${newStatus.toLowerCase()}.`,
+    });
   };
 
   return (
@@ -158,10 +170,28 @@ export default function Requests() {
                           <Button
                             size="sm"
                             variant="outline"
+                            onClick={() => handleReview(request, 'approve')}
+                            className="h-7 px-2 text-[11px]"
+                          >
+                            <Check className="h-3 w-3" />
+                            Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleReview(request, 'decline')}
+                            className="h-7 px-2 text-[11px] text-destructive hover:text-destructive"
+                          >
+                            <X className="h-3 w-3" />
+                            Decline
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
                             onClick={() => setSelectedRequest(request)}
                             className="h-7 px-2 text-[11px]"
                           >
-                            Review
+                            <Eye className="h-3 w-3" />
                           </Button>
                         </div>
                       ) : (
@@ -171,6 +201,7 @@ export default function Requests() {
                           onClick={() => setSelectedRequest(request)}
                           className="h-7 px-2 text-[11px]"
                         >
+                          <Eye className="h-3 w-3" />
                           View
                         </Button>
                       )}
@@ -190,6 +221,7 @@ export default function Requests() {
         )}
       </Card>
 
+      {/* View Request Modal */}
       <Modal
         open={!!selectedRequest}
         onClose={() => setSelectedRequest(null)}
@@ -199,20 +231,16 @@ export default function Requests() {
           selectedRequest?.status === 'Pending' ? (
             <>
               <Button variant="outline" onClick={() => setSelectedRequest(null)}>
-                Cancel
+                Close
               </Button>
               <Button
                 variant="destructive"
-                onClick={() => handleStatusUpdate(selectedRequest, 'Declined')}
-                disabled={updateStatus.isPending}
+                onClick={() => handleReview(selectedRequest, 'decline')}
               >
                 <X className="h-4 w-4" />
                 Decline
               </Button>
-              <Button
-                onClick={() => handleStatusUpdate(selectedRequest, 'Approved')}
-                disabled={updateStatus.isPending}
-              >
+              <Button onClick={() => handleReview(selectedRequest, 'approve')}>
                 <Check className="h-4 w-4" />
                 Approve
               </Button>
@@ -257,6 +285,48 @@ export default function Requests() {
                 Reviewed by {selectedRequest.reviewedBy} on {selectedRequest.reviewedDate}
               </div>
             )}
+          </div>
+        )}
+      </Modal>
+
+      {/* Review Modal (Approve/Decline with reason) */}
+      <Modal
+        open={!!reviewModal}
+        onClose={() => { setReviewModal(null); setReviewReason(''); }}
+        title={reviewModal ? `${reviewModal.action === 'approve' ? 'Approve' : 'Decline'} Request ${reviewModal.request.id}` : ''}
+        description={reviewModal ? `${reviewModal.request.requester} — ${reviewModal.request.destination}` : undefined}
+        footer={
+          <>
+            <Button variant="outline" onClick={() => { setReviewModal(null); setReviewReason(''); }}>
+              Cancel
+            </Button>
+            <Button
+              variant={reviewModal?.action === 'decline' ? 'destructive' : 'default'}
+              onClick={handleSubmitReview}
+              disabled={submitting}
+            >
+              {submitting ? 'Processing...' : reviewModal?.action === 'approve' ? 'Approve Request' : 'Decline Request'}
+            </Button>
+          </>
+        }
+      >
+        {reviewModal && (
+          <div className="space-y-4">
+            <div className="rounded-md border border-border bg-muted/30 px-4 py-3 text-sm">
+              <p className="font-medium text-foreground">{reviewModal.request.requester}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {reviewModal.request.destination} · {reviewModal.request.startDate} — {reviewModal.request.endDate}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">{reviewModal.request.purpose}</p>
+            </div>
+            <FormField label={reviewModal.action === 'decline' ? 'Reason for Decline (required)' : 'Notes (optional)'}>
+              <Textarea
+                value={reviewReason}
+                onChange={(e) => setReviewReason(e.target.value)}
+                placeholder={reviewModal.action === 'decline' ? 'Explain why this request is being declined...' : 'Add any notes for the requester...'}
+                rows={3}
+              />
+            </FormField>
           </div>
         )}
       </Modal>
