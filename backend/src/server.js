@@ -55,6 +55,9 @@ app.use('/api/requests', require('./routes/request.routes'));
 // Assignment management routes
 app.use('/api/assignments', require('./routes/assignment.routes'));
 
+// Trip management routes
+app.use('/api/trips', require('./routes/trip.routes'));
+
 // ─── Error Handler ────────────────────────────────────────────────────────────
 // This must be last — catches all errors from routes above
 app.use(errorHandler);
