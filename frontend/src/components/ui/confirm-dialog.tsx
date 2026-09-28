@@ -8,7 +8,7 @@ interface ConfirmDialogProps {
   description: string;
   confirmLabel?: string;
   cancelLabel?: string;
-  variant?: 'danger' | 'primary';
+  variant?: 'danger' | 'primary' | 'destructive' | 'default';
   loading?: boolean;
 }
 
@@ -44,7 +44,7 @@ export function ConfirmDialog({
             {cancelLabel}
           </Button>
           <Button
-            variant={variant === 'danger' ? 'destructive' : 'primary'}
+            variant={variant === 'danger' || variant === 'destructive' ? 'destructive' : variant === 'default' ? 'outline' : 'primary'}
             onClick={onConfirm}
             disabled={loading}
           >

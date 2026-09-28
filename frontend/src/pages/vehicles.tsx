@@ -1,12 +1,10 @@
 import { useState } from 'react';
-import { Link } from 'wouter';
-import { Plus, Truck, Search, Edit, Trash2, Wrench, CheckCircle2 } from 'lucide-react';
+import { Plus, Truck, Search, Edit, Trash2, Wrench } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { FormField } from '@/components/ui/form-field';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { PageHeader } from '@/components/ui/page-header';

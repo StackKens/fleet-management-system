@@ -377,7 +377,7 @@ export default function Requests() {
               Cancel
             </Button>
             <Button
-              variant={reviewModal?.action === 'decline' ? 'destructive' : 'default'}
+              variant={reviewModal?.action === 'decline' ? 'destructive' : 'primary'}
               onClick={handleSubmitReview}
               disabled={submitting}
             >

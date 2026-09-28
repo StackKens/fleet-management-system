@@ -133,9 +133,12 @@ export default function Maintenance() {
     });
   };
 
-  const handleUpdateStatus = () => {
+  const handleUpdateStatus = async () => {
     if (!statusUpdate) return;
+    setSubmitting(true);
+    await new Promise((resolve) => setTimeout(resolve, 400));
     updateMaintenanceStatus(statusUpdate.id, statusUpdate.status);
+    setSubmitting(false);
     toast({
       title: 'Status Updated',
       description: `Maintenance status updated to ${statusUpdate.status}.`,
