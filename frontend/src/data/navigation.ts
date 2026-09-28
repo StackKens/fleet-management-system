@@ -67,6 +67,7 @@ export const ROLE_NAVIGATION: Record<UserRole, RoleNavigation> = {
         title: 'Administration',
         items: [
           { label: 'Departments', href: '/departments', icon: Building2, capability: CAPABILITIES.MANAGE_DEPARTMENTS },
+          { label: 'Profile', href: '/profile', icon: UserRound, capability: CAPABILITIES.VIEW_OWN_NOTIFICATIONS },
         ],
       },
     ],
@@ -95,6 +96,7 @@ export const ROLE_NAVIGATION: Record<UserRole, RoleNavigation> = {
         title: 'General',
         items: [
           { label: 'Notifications', href: '/notifications', icon: Bell, capability: CAPABILITIES.VIEW_OWN_NOTIFICATIONS },
+          { label: 'Profile', href: '/profile', icon: UserRound, capability: CAPABILITIES.VIEW_OWN_NOTIFICATIONS },
         ],
       },
     ],
@@ -116,6 +118,7 @@ export const ROLE_NAVIGATION: Record<UserRole, RoleNavigation> = {
         title: 'General',
         items: [
           { label: 'Notifications', href: '/notifications', icon: Bell, capability: CAPABILITIES.VIEW_OWN_NOTIFICATIONS },
+          { label: 'Profile', href: '/profile', icon: UserRound, capability: CAPABILITIES.VIEW_OWN_NOTIFICATIONS },
         ],
       },
     ],
@@ -138,6 +141,7 @@ export const ROLE_NAVIGATION: Record<UserRole, RoleNavigation> = {
         items: [
           { label: 'Audit Logs', href: '/audit-logs', icon: ScrollText, capability: CAPABILITIES.VIEW_AUDIT_LOGS },
           { label: 'Settings', href: '/settings', icon: Settings, capability: CAPABILITIES.MANAGE_SYSTEM_SETTINGS },
+          { label: 'Profile', href: '/profile', icon: UserRound, capability: CAPABILITIES.VIEW_OWN_NOTIFICATIONS },
         ],
       },
     ],

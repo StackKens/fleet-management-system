@@ -30,6 +30,7 @@ import RequestVehicle from '@/pages/request-vehicle';
 import MyRequests from '@/pages/my-requests';
 import VehicleDetail from '@/pages/vehicle-detail';
 import DriverDetail from '@/pages/driver-detail';
+import Profile from '@/pages/profile';
 import Roles from '@/pages/roles';
 import Departments from '@/pages/departments';
 import AuditLogs from '@/pages/audit-logs';
@@ -177,10 +178,15 @@ function Router() {
                   </RouteGuard>
                 </Route>
 
-                {/* Shared routes - accessible by Driver, Staff, Admin */}
+                {/* Shared routes - accessible by all roles */}
                 <Route path="/notifications">
                   <RouteGuard requiredCapabilities={CAPABILITIES.VIEW_OWN_NOTIFICATIONS}>
                     <Notifications />
+                  </RouteGuard>
+                </Route>
+                <Route path="/profile">
+                  <RouteGuard requiredCapabilities={CAPABILITIES.VIEW_OWN_NOTIFICATIONS}>
+                    <Profile />
                   </RouteGuard>
                 </Route>
 

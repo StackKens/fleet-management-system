@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BarChart3, Download, FileText, Search } from 'lucide-react';
+import { BarChart3, Download, FileText, Search, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -8,8 +8,10 @@ import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingState } from '@/components/ui/loading-state';
 import { Badge } from '@/components/ui/badge';
+import { Modal } from '@/components/ui/modal';
 import { useReports } from '@/hooks/use-fleet-data';
-import type { ReportType } from '@/data/types';
+import { toast } from '@/hooks/use-toast';
+import type { Report, ReportType } from '@/data/types';
 
 const reportTypeVariant: Record<ReportType, 'default' | 'info' | 'success' | 'warning' | 'danger' | 'primary'> = {
   'Vehicle utilization': 'info',
@@ -26,6 +28,8 @@ export default function Reports() {
   const { data: reports, isLoading } = useReports();
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
+  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const [generating, setGenerating] = useState(false);
 
   const filtered = (reports ?? []).filter((r) => {
     const matchesSearch =
@@ -38,15 +42,32 @@ export default function Reports() {
 
   const reportTypes = [...new Set((reports ?? []).map((r) => r.type))];
 
+  const handleGenerate = async () => {
+    setGenerating(true);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    setGenerating(false);
+    toast({
+      title: 'Report Generated',
+      description: 'A new fleet status report has been generated successfully.',
+    });
+  };
+
+  const handleExport = (report: Report) => {
+    toast({
+      title: 'Export Started',
+      description: `Exporting ${report.title}...`,
+    });
+  };
+
   return (
     <div className="mx-auto max-w-[1520px] px-5 py-7 sm:px-8 lg:px-10">
       <PageHeader
         title="Reports"
         description="Fleet performance and operational reports."
         actions={
-          <Button>
+          <Button onClick={handleGenerate} disabled={generating}>
             <FileText className="h-4 w-4" />
-            Generate report
+            {generating ? 'Generating...' : 'Generate report'}
           </Button>
         }
       />
@@ -103,18 +124,66 @@ export default function Reports() {
                 </div>
               </CardContent>
               <div className="flex items-center gap-2 border-t border-border px-5 py-3">
-                <Button variant="outline" size="sm" className="flex-1">
+                <Button variant="outline" size="sm" className="flex-1" onClick={() => setSelectedReport(report)}>
+                  <Eye className="h-3.5 w-3.5" />
+                  View
+                </Button>
+                <Button variant="ghost" size="sm" className="flex-1" onClick={() => handleExport(report)}>
                   <Download className="h-3.5 w-3.5" />
                   Export
-                </Button>
-                <Button variant="ghost" size="sm" className="flex-1">
-                  View
                 </Button>
               </div>
             </Card>
           ))}
         </div>
       )}
+
+      {/* Report Detail Modal */}
+      <Modal
+        open={!!selectedReport}
+        onClose={() => setSelectedReport(null)}
+        title={selectedReport?.title ?? ''}
+        description={selectedReport ? `${selectedReport.type} — ${selectedReport.period}` : undefined}
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setSelectedReport(null)}>
+              Close
+            </Button>
+            <Button onClick={() => selectedReport && handleExport(selectedReport)}>
+              <Download className="h-4 w-4" />
+              Export Report
+            </Button>
+          </>
+        }
+      >
+        {selectedReport && (
+          <div className="space-y-4">
+            <div className="rounded-md border border-border bg-muted/30 px-4 py-3">
+              <p className="text-sm text-foreground">{selectedReport.description}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <p className="text-xs text-muted-foreground">Report Type</p>
+                <Badge variant={reportTypeVariant[selectedReport.type] ?? 'default'}>
+                  {selectedReport.type}
+                </Badge>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Period</p>
+                <p className="mt-1 font-medium text-foreground">{selectedReport.period}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Generated</p>
+                <p className="mt-1 font-medium text-foreground">{selectedReport.generatedDate}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Report ID</p>
+                <p className="data-mono mt-1 font-medium text-foreground">{selectedReport.id}</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

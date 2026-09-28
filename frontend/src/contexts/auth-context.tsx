@@ -30,7 +30,17 @@ const MOCK_USERS: (Omit<AuthUser, 'capabilities'> & { password: string })[] = [
 ];
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(() => {
+    const stored = localStorage.getItem('fleet_user');
+    if (stored) {
+      try {
+        return JSON.parse(stored);
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  });
 
   const login = async (email: string, password: string): Promise<boolean> => {
     await new Promise((resolve) => setTimeout(resolve, 500));
@@ -40,7 +50,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (found) {
       const { password: _, ...authUser } = found;
       const capabilities = getCapabilitiesForRole(authUser.role);
-      setUser({ ...authUser, capabilities });
+      const userWithCaps = { ...authUser, capabilities };
+      setUser(userWithCaps);
+      localStorage.setItem('fleet_user', JSON.stringify(userWithCaps));
       return true;
     }
     return false;
@@ -48,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     setUser(null);
+    localStorage.removeItem('fleet_user');
   };
 
   const hasCapability = (capability: Capability): boolean => {
