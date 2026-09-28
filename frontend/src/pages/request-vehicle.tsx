@@ -269,7 +269,21 @@ export default function RequestVehicle() {
             {availableVehicles.length === 0 ? (
               <div className="px-5 py-6 text-center">
                 <Truck className="mx-auto h-8 w-8 text-muted-foreground" strokeWidth={1.5} />
-                <p className="mt-2 text-xs text-muted-foreground">No vehicles currently available</p>
+                {(vehicles ?? []).length === 0 ? (
+                  <>
+                    <p className="mt-2 text-xs font-medium text-foreground">No vehicles in fleet</p>
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      There are no vehicles registered in the system yet.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="mt-2 text-xs font-medium text-foreground">No vehicles available</p>
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      All {(vehicles ?? []).length} vehicles are currently assigned or in maintenance.
+                    </p>
+                  </>
+                )}
               </div>
             ) : (
               availableVehicles.map((vehicle) => (
