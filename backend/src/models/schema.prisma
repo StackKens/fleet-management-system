@@ -1,0 +1,358 @@
+// Prisma Schema — Fleet Management System
+// This file defines our database tables and relationships.
+// Prisma reads this file to create the actual PostgreSQL database.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Departments ─────────────────────────────────────────────────────────────
+// Organizational units (e.g., Field Operations, Public Health)
+model Department {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  head      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  users    User[]
+  vehicles Vehicle[]
+  drivers  Driver[]
+  requests VehicleRequest[]
+  assignments Assignment[]
+}
+
+// ─── Users ───────────────────────────────────────────────────────────────────
+// System users with roles and authentication
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         String   @default("Staff") // Admin, Fleet Manager, Driver, Staff, Supervisor
+  phone        String?
+  status       String   @default("Active") // Active, Inactive
+  lastLogin    DateTime? @map("last_login")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relationships
+  departmentId String?    @map("department_id")
+  department   Department? @relation(fields: [departmentId], references: [id])
+
+  requests          VehicleRequest[]  @relation("Requester")
+  reviewedRequests  VehicleRequest[]  @relation("Reviewer")
+  assignments       Assignment[]
+  trips             Trip[]            @relation("DriverTrips")
+  fuelRecords       FuelRecord[]
+  inspections        Inspection[]
+  issues            Issue[]
+  expenses          Expense[]
+  notifications     Notification[]
+  activityLogs      ActivityLog[]
+
+  @@map("users")
+}
+
+// ─── Vehicles ────────────────────────────────────────────────────────────────
+// Fleet vehicles with registration, status, and mileage
+model Vehicle {
+  id              String   @id @default(cuid())
+  registration    String   @unique
+  make            String
+  model           String
+  vehicleType     String   @map("vehicle_type")
+  year            Int
+  color           String?
+  fuelType        String   @default("Diesel") @map("fuel_type") // Petrol, Diesel, Hybrid, Electric
+  status          String   @default("Available") // Available, Assigned, In service, Maintenance
+  mileage         Int      @default(0)
+  lastService     String?  @map("last_service")
+  nextService     String?  @map("next_service")
+  insuranceExpiry String?  @map("insurance_expiry")
+  inspectionExpiry String? @map("inspection_expiry")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relationships
+  departmentId String?    @map("department_id")
+  department   Department? @relation(fields: [departmentId], references: [id])
+
+  assignments       Assignment[]
+  trips             Trip[]
+  maintenanceRecords MaintenanceRecord[]
+  fuelRecords       FuelRecord[]
+  inspections        Inspection[]
+  issues            Issue[]
+  expenses          Expense[]
+
+  @@map("vehicles")
+}
+
+// ─── Drivers ─────────────────────────────────────────────────────────────────
+// Driver profiles with license and status
+model Driver {
+  id             String   @id @default(cuid())
+  name           String
+  phone          String
+  email          String   @unique
+  licenseNumber  String   @unique @map("license_number")
+  licenseExpiry  String   @map("license_expiry")
+  status         String   @default("Active") // Active, On leave, Suspended, Inactive
+  tripsCompleted Int      @default(0) @map("trips_completed")
+  rating         Float    @default(5.0)
+  joinDate       String   @map("join_date")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relationships
+  departmentId String?    @map("department_id")
+  department   Department? @relation(fields: [departmentId], references: [id])
+
+  assignments Assignment[]
+  trips       Trip[]            @relation("DriverUser")
+  fuelRecords FuelRecord[]
+  inspections  Inspection[]
+  issues      Issue[]
+
+  @@map("drivers")
+}
+
+// ─── Vehicle Requests ────────────────────────────────────────────────────────
+// Staff requests for vehicles (pending → approved/declined)
+model VehicleRequest {
+  id            String   @id @default(cuid())
+  destination   String
+  purpose       String
+  startDate     String   @map("start_date")
+  endDate       String   @map("end_date")
+  status        String   @default("Pending") // Pending, Approved, Declined, Completed
+  reviewedBy    String?  @map("reviewed_by")
+  reviewedDate  String?  @map("reviewed_date")
+  reviewReason  String?  @map("review_reason")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relationships
+  requesterId String  @map("requester_id")
+  requester   User    @relation("Requester", fields: [requesterId], references: [id])
+
+  departmentId String?    @map("department_id")
+  department   Department? @relation(fields: [departmentId], references: [id])
+
+  assignment Assignment?
+
+  @@map("vehicle_requests")
+}
+
+// ─── Assignments ─────────────────────────────────────────────────────────────
+// Vehicle-driver pairings for approved requests
+model Assignment {
+  id        String   @id @default(cuid())
+  startDate String   @map("start_date")
+  endDate   String?  @map("end_date")
+  status    String   @default("Active") // Active, Completed, Cancelled
+  purpose   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  vehicleId String  @map("vehicle_id")
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [id])
+
+  driverId String @map("driver_id")
+  driver   Driver @relation(fields: [driverId], references: [id])
+
+  departmentId String?    @map("department_id")
+  department   Department? @relation(fields: [departmentId], references: [id])
+
+  requestId String?         @map("request_id")
+  request   VehicleRequest? @relation(fields: [requestId], references: [id])
+
+  trips Trip[]
+
+  @@map("assignments")
+}
+
+// ─── Trips ───────────────────────────────────────────────────────────────────
+// Vehicle trips with departure, return, mileage, and fuel
+model Trip {
+  id             String    @id @default(cuid())
+  destination    String
+  departure      String
+  expectedReturn String    @map("expected_return")
+  actualReturn   String?   @map("actual_return")
+  status         String    @default("Scheduled") // Scheduled, On route, Returned, Cancelled
+  purpose        String?
+  mileageStart   Int       @default(0) @map("mileage_start")
+  mileageEnd     Int?      @map("mileage_end")
+  fuelUsed       Float?    @map("fuel_used")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Relationships
+  vehicleId String  @map("vehicle_id")
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [id])
+
+  driverId String @map("driver_id")
+  driver   User   @relation("DriverTrips", fields: [driverId], references: [id])
+
+  assignmentId String?      @map("assignment_id")
+  assignment   Assignment? @relation(fields: [assignmentId], references: [id])
+
+  @@map("trips")
+}
+
+// ─── Maintenance Records ─────────────────────────────────────────────────────
+// Service and repair history for vehicles
+model MaintenanceRecord {
+  id              String    @id @default(cuid())
+  type            String // Routine service, Repair, Inspection, Emergency
+  status          String    @default("Scheduled") // Scheduled, In progress, Completed, Cancelled
+  description     String
+  reportedDate    String    @map("reported_date")
+  scheduledDate   String    @map("scheduled_date")
+  completedDate   String?   @map("completed_date")
+  cost            Float     @default(0)
+  partsReplaced   String[]  @map("parts_replaced")
+  workshop        String
+  mileageAtService Int      @map("mileage_at_service")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relationships
+  vehicleId String  @map("vehicle_id")
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [id])
+
+  @@map("maintenance_records")
+}
+
+// ─── Fuel Records ────────────────────────────────────────────────────────────
+// Fuel consumption records for vehicles
+model FuelRecord {
+  id           String   @id @default(cuid())
+  date         String
+  liters       Float
+  costPerLiter Float    @map("cost_per_liter")
+  totalCost    Float    @map("total_cost")
+  mileage      Int
+  fuelStation  String   @map("fuel_station")
+  fuelType     String   @map("fuel_type")
+  createdAt    DateTime @default(now())
+
+  // Relationships
+  vehicleId String  @map("vehicle_id")
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [id])
+
+  driverId String @map("driver_id")
+  driver   User   @relation(fields: [driverId], references: [id])
+
+  @@map("fuel_records")
+}
+
+// ─── Expenses ────────────────────────────────────────────────────────────────
+// General fleet expenses
+model Expense {
+  id          String   @id @default(cuid())
+  category    String
+  amount      Float
+  date        String
+  description String?
+  recordedBy  String   @map("recorded_by")
+  createdAt   DateTime @default(now())
+
+  // Relationships
+  vehicleId String  @map("vehicle_id")
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [id])
+
+  @@map("expenses")
+}
+
+// ─── Inspections ─────────────────────────────────────────────────────────────
+// Vehicle inspections (pre-trip, post-trip, weekly, monthly)
+model Inspection {
+  id          String   @id @default(cuid())
+  type        String // Pre-trip, Post-trip, Weekly, Monthly
+  result      String   @default("Pending") // Passed, Failed, Pending
+  mileage     Int
+  notes       String?
+  date        String
+  submittedBy String   @map("submitted_by")
+  createdAt   DateTime @default(now())
+
+  // Relationships
+  vehicleId String  @map("vehicle_id")
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [id])
+
+  driverId String? @map("driver_id")
+  driver   Driver? @relation(fields: [driverId], references: [id])
+
+  @@map("inspections")
+}
+
+// ─── Issues ──────────────────────────────────────────────────────────────────
+// Accidents, incidents, and vehicle problems
+model Issue {
+  id          String   @id @default(cuid())
+  type        String // Vehicle problem, Accident, Incident, Other
+  severity    String // Low, Medium, High, Critical
+  status      String   @default("Open") // Open, In progress, Resolved
+  description String
+  location    String?
+  date        String
+  reportedBy  String   @map("reported_by")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relationships
+  vehicleId String  @map("vehicle_id")
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [id])
+
+  driverId String? @map("driver_id")
+  driver   Driver? @relation(fields: [driverId], references: [id])
+
+  @@map("issues")
+}
+
+// ─── Notifications ───────────────────────────────────────────────────────────
+// User notifications
+model Notification {
+  id        String   @id @default(cuid())
+  type      String // maintenance, request, assignment, document, system
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  link      String?
+  timestamp DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  // Relationships
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@map("notifications")
+}
+
+// ─── Activity Logs ───────────────────────────────────────────────────────────
+// Audit trail of system actions
+model ActivityLog {
+  id         String   @id @default(cuid())
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  details    String?
+  timestamp  DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  // Relationships
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@map("activity_logs")
+}

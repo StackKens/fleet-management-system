@@ -1,46 +1,39 @@
-const express = require("express");
+// Server — Express app entry point
+// This file sets up the Express server with all middleware and routes
+
+const express = require('express');
+const cors = require('cors');
+const morgan = require('morgan');
+const config = require('./config');
+const errorHandler = require('./middleware/errorHandler');
+
 const app = express();
-const morgan = require("morgan");
-const PORT = 8000;
 
-const authMiddleware = require("./middleware/authMiddleware");
+// ─── Middleware ───────────────────────────────────────────────────────────────
+// CORS — allows frontend to call this backend
+app.use(cors({
+  origin: config.corsOrigin,
+  credentials: true,
+}));
 
+// JSON parsing — parses incoming JSON request bodies
 app.use(express.json());
-app.use(morgan("dev"));
 
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.url}`);
-  next();
+// Logging — logs each request to the console
+app.use(morgan('dev'));
+
+// ─── Routes ───────────────────────────────────────────────────────────────────
+// Health check — simple endpoint to verify server is running
+app.get('/', (req, res) => {
+  res.json({ success: true, message: 'Fleet Management API is running' });
 });
 
-const users = [
-  { id: 1, name: "alex" },
-  { id: 2, name: "stackkens" },
-  { id: 3, name: "peter" },
-];
+// ─── Error Handler ────────────────────────────────────────────────────────────
+// This must be last — catches all errors from routes above
+app.use(errorHandler);
 
-app.get("/", (req, res) => {
-  res.send("Hello from express");
-});
-
-app.get("/about", (req, res) => {
-  res.send("Hello from about page");
-});
-
-app.get("/users/:id", (req, res) => {
-  const id = Number(req.params.id);
-  const user = users.find((u) => u.id === id);
-
-  if (!user) {
-    return res.status(404).json({ message: "User No found!" });
-  }
-  res.json(user);
-});
-
-app.post("/api/auth/user/login", authMiddleware, (req, res) => {
-  console.log(req.body);
-  res.json(req.body);
-});
-app.listen(PORT, () => {
-  console.log("Server is running");
+// ─── Start Server ─────────────────────────────────────────────────────────────
+app.listen(config.port, () => {
+  console.log(`Server running on port ${config.port}`);
+  console.log(`CORS enabled for: ${config.corsOrigin}`);
 });
