@@ -14,7 +14,6 @@ import { Pagination } from '@/components/ui/pagination';
 import { Avatar } from '@/components/ui/avatar';
 import { Modal } from '@/components/ui/modal';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { useFleetStore } from '@/stores/fleet-store';
 import { useUsers } from '@/hooks/use-fleet-data';
 import { toast } from '@/hooks/use-toast';
 import type { UserRole } from '@/data/types';
@@ -45,9 +44,6 @@ const emptyForm: UserFormData = {
 
 export default function Users() {
   const { data: users, isLoading } = useUsers();
-  const addDriver = useFleetStore((s) => s.addDriver);
-  const updateDriver = useFleetStore((s) => s.updateDriver);
-  const deleteDriver = useFleetStore((s) => s.deleteDriver);
 
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');

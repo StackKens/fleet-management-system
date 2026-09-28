@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Wrench, Search, Edit, Trash2, CheckCircle2 } from 'lucide-react';
+import { Plus, Wrench, Search, Trash2, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -63,7 +63,7 @@ export default function Maintenance() {
   const [typeFilter, setTypeFilter] = useState('');
   const [page, setPage] = useState(1);
   const [addModal, setAddModal] = useState(false);
-  const [editRecord, setEditRecord] = useState<string | null>(null);
+  const [_editRecord, _setEditRecord] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [statusUpdate, setStatusUpdate] = useState<{ id: string; status: MaintenanceStatus } | null>(null);
   const [formData, setFormData] = useState<MaintenanceFormData>(emptyForm);
