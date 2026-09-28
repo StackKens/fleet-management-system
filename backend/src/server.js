@@ -73,6 +73,9 @@ app.use('/api/issues', require('./routes/issue.routes'));
 // Notification management routes
 app.use('/api/notifications', require('./routes/notification.routes'));
 
+// Report routes
+app.use('/api/reports', require('./routes/report.routes'));
+
 // ─── Error Handler ────────────────────────────────────────────────────────────
 // This must be last — catches all errors from routes above
 app.use(errorHandler);
