@@ -3,18 +3,21 @@ const cors = require('cors');
 const morgan = require('morgan');
 const config = require('./config');
 const errorHandler = require('./middleware/errorHandler');
+const { apiLimiter, authLimiter } = require('./middleware/security');
+const validate = require('./middleware/validate');
 
 const app = express();
 
 app.use(cors({ origin: config.corsOrigin, credentials: true }));
 app.use(express.json());
 app.use(morgan('dev'));
+app.use('/api', apiLimiter);
 
 app.get('/', (req, res) => {
   res.json({ success: true, message: 'Fleet Management API is running' });
 });
 
-app.use('/api/auth', require('./routes/auth.routes'));
+app.use('/api/auth', authLimiter, require('./routes/auth.routes'));
 
 app.get('/api/protected', require('./middleware/auth'), (req, res) => {
   res.json({
