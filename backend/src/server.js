@@ -49,6 +49,9 @@ app.use('/api/departments', require('./routes/department.routes'));
 // Vehicle management routes
 app.use('/api/vehicles', require('./routes/vehicle.routes'));
 
+// Vehicle request management routes
+app.use('/api/requests', require('./routes/request.routes'));
+
 // ─── Error Handler ────────────────────────────────────────────────────────────
 // This must be last — catches all errors from routes above
 app.use(errorHandler);
