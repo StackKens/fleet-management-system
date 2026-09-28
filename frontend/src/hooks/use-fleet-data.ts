@@ -297,6 +297,28 @@ export function useExpenses() {
   });
 }
 
+// ─── Inspection Hooks ───────────────────────────────────────────────────────
+export function useInspections() {
+  return useQuery({
+    queryKey: ['inspections'],
+    queryFn: async () => {
+      await delay();
+      return useFleetStore.getState().inspections;
+    },
+  });
+}
+
+// ─── Issue Hooks ────────────────────────────────────────────────────────────
+export function useIssues() {
+  return useQuery({
+    queryKey: ['issues'],
+    queryFn: async () => {
+      await delay();
+      return useFleetStore.getState().issues;
+    },
+  });
+}
+
 // ─── Report Hooks ───────────────────────────────────────────────────────────
 export function useReports() {
   return useQuery({

@@ -307,9 +307,9 @@ export default function Vehicles() {
                 {paginated.map((vehicle) => (
                   <TableRow key={vehicle.id}>
                     <TableCell>
-                      <span className="data-mono font-semibold text-primary">
+                      <Link href={`/vehicles/${vehicle.id}`} className="data-mono font-semibold text-primary hover:underline">
                         {vehicle.registration}
-                      </span>
+                      </Link>
                     </TableCell>
                     <TableCell>
                       <p className="font-medium text-foreground">{vehicle.make} {vehicle.model}</p>

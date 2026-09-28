@@ -239,9 +239,9 @@ export default function Drivers() {
                       <div className="flex items-center gap-3">
                         <Avatar name={driver.name} size="sm" />
                         <div>
-                          <p className="font-semibold text-primary">
+                          <Link href={`/drivers/${driver.id}`} className="font-semibold text-primary hover:underline">
                             {driver.name}
-                          </p>
+                          </Link>
                           <p className="text-[11px] text-muted-foreground">{driver.phone}</p>
                         </div>
                       </div>

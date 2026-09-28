@@ -28,6 +28,8 @@ import ReportIssue from '@/pages/report-issue';
 import Notifications from '@/pages/notifications';
 import RequestVehicle from '@/pages/request-vehicle';
 import MyRequests from '@/pages/my-requests';
+import VehicleDetail from '@/pages/vehicle-detail';
+import DriverDetail from '@/pages/driver-detail';
 import Roles from '@/pages/roles';
 import Departments from '@/pages/departments';
 import AuditLogs from '@/pages/audit-logs';
@@ -90,9 +92,19 @@ function Router() {
                     <Vehicles />
                   </RouteGuard>
                 </Route>
+                <Route path="/vehicles/:id">
+                  <RouteGuard requiredCapabilities={CAPABILITIES.VIEW_VEHICLES}>
+                    <VehicleDetail />
+                  </RouteGuard>
+                </Route>
                 <Route path="/drivers">
                   <RouteGuard requiredCapabilities={CAPABILITIES.VIEW_DRIVERS}>
                     <Drivers />
+                  </RouteGuard>
+                </Route>
+                <Route path="/drivers/:id">
+                  <RouteGuard requiredCapabilities={CAPABILITIES.VIEW_DRIVERS}>
+                    <DriverDetail />
                   </RouteGuard>
                 </Route>
                 <Route path="/requests">
