@@ -1,26 +1,165 @@
-// Prisma Schema — Fleet Management System
-// This file defines our database tables and relationships.
-// Prisma reads this file to create the actual PostgreSQL database.
+// =============================================================================
+// PRISMA SCHEMA — Fleet Management System
+// =============================================================================
+//
+// WHAT IS THIS FILE?
+// ------------------
+// This file is the BLUEPRINT for our entire database. It defines:
+//   - What tables exist (e.g., vehicles, drivers, users)
+//   - What columns each table has (e.g., name, email, status)
+//   - How tables relate to each other (e.g., a Trip belongs to a Vehicle)
+//
+// Prisma reads this file and:
+//   1. Creates the actual database tables (via migrations)
+//   2. Generates a TypeScript client for type-safe database queries
+//   3. Validates data before it enters the database
+//
+// WHY PRISMA?
+// -----------
+// - Type safety: If you try to insert a string where a number belongs,
+//   Prisma catches it at compile time, not at runtime.
+//   - Migrations: Schema changes are tracked and can be rolled back.
+//   - Auto-complete: Your editor knows every table and column name.
+//   - Database agnostic: Works with PostgreSQL, MySQL, SQLite, etc.
+//
+// =============================================================================
 
+// -----------------------------------------------------------------------------
+// GENERATOR: Tells Prisma to create a JavaScript/TypeScript client
+// -----------------------------------------------------------------------------
+// WHAT IS THE PRISMA CLIENT?
+// -------------------------
+// The Prisma Client is a generated library that lets you query your database
+// using JavaScript/TypeScript instead of raw SQL.
+//
+// Instead of writing:
+//   db.query('SELECT * FROM vehicles WHERE status = $1', ['Available'])
+//
+// You write:
+//   prisma.vehicle.findMany({ where: { status: 'Available' } })
+//
+// WHY THIS MATTERS:
+// - Type-safe: TypeScript knows the shape of your data
+// - Auto-complete: Your editor suggests table and column names
+// - Refactoring: Rename a column in schema, Prisma updates all queries
+// -----------------------------------------------------------------------------
 generator client {
   provider = "prisma-client-js"
 }
 
+// -----------------------------------------------------------------------------
+// DATASOURCE: Tells Prisma which database to connect to
+// -----------------------------------------------------------------------------
+// WHY SQLITE FOR DEVELOPMENT?
+// --------------------------
+// SQLite is used for local development because:
+//   - No setup required: It's a single file (dev.db)
+//   - No server needed: Unlike PostgreSQL, no separate process to run
+//   - Fast: Perfect for development and testing
+//
+// FOR PRODUCTION:
+// ---------------
+// Change provider to "postgresql" and update DATABASE_URL:
+//   provider = "postgresql"
+//   url      = env("DATABASE_URL")
+//
+// PostgreSQL is better for production because:
+//   - Handles many concurrent users
+//   - Better performance for complex queries
+//   - More robust data integrity
+//   - Better security features
+// -----------------------------------------------------------------------------
 datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
-// ─── Departments ─────────────────────────────────────────────────────────────
-// Organizational units (e.g., Field Operations, Public Health)
+// =============================================================================
+// TABLE: Department
+// =============================================================================
+// WHAT IS THIS TABLE?
+// ------------------
+// Departments are organizational units within the company.
+// Examples: "Field Operations", "Public Health", "Water & Sanitation"
+//
+// WHY A SEPARATE TABLE?
+// --------------------
+// Instead of storing department names as text in every user/vehicle record,
+// we create a separate table. This is called NORMALIZATION.
+//
+// BENEFITS OF NORMALIZATION:
+//   - Consistency: Department name is stored once, not duplicated
+//   - Easy renaming: Change "Public Health" to "Health Department" in one place
+//   - Data integrity: No typos like "Public Helth" vs "Public Health"
+//   - Statistics: Easy to count vehicles/drivers per department
+//
+// EXAMPLE DATA:
+//   id: "clx1234567890abcdef"
+//   name: "Field Operations"
+//   head: "Robert Okello"
+// =============================================================================
 model Department {
+  // PRIMARY KEY
+  // -----------
+  // Every table needs a primary key (PK) — a unique identifier for each row.
+  //
+  // WHY cid()?
+  // ---------
+  // cuid() = Collision-resistant Unique Identifier
+  //   - Generates IDs like "clx1234567890abcdef"
+  //   - Unique across the entire database
+  //   - Can't be guessed (unlike auto-increment 1, 2, 3...)
+  //   - Safe for distributed systems
+  //
+  // WHY NOT AUTO-INCREMENT (1, 2, 3...)?
+  // -----------------------------------
+  //   - Guessable: Someone can try /api/vehicles/4, /api/vehicles/5...
+  //   - Reveals data size: Competitor knows you have 1000 vehicles
+  //   - Hard to merge: Two databases both have vehicle "1"
   id        String   @id @default(cuid())
+
+  // DEPARTMENT NAME
+  // ---------------
+  // @unique: No two departments can have the same name.
+  // This prevents duplicates like "Field Ops" and "Field Operations".
   name      String   @unique
+
+  // DEPARTMENT HEAD
+  // ---------------
+  // String? means this field is OPTIONAL (nullable).
+  // A department might not have a head assigned yet.
   head      String?
+
+  // TIMESTAMPS
+  // ----------
+  // @default(now()): Automatically set to current time when row is created
+  // @updatedAt: Automatically updated whenever the row is modified
+  //
+  // WHY TRACK THESE?
+  //   - Audit trail: Know when records were created/modified
+  //   - Debugging: "This vehicle was updated 2 hours ago"
+  //   - Sync: Know which records changed since last sync
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relationships
+  // ===========================================================================
+  // RELATIONSHIPS
+  // ===========================================================================
+  // A department can have MANY users, vehicles, drivers, etc.
+  // This is a ONE-TO-MANY relationship:
+  //   One Department → Many Users
+  //   One Department → Many Vehicles
+  //   One Department → Many Drivers
+  //
+  // HOW IT WORKS:
+  //   Department table: id = "dept-001"
+  //   User table: department_id = "dept-001" (points to the department)
+  //
+  // WHY NOT STORE DEPARTMENT NAME IN USER TABLE?
+  //   - Duplication: "Field Operations" stored 50 times
+  //   - Inconsistency: Typos create "phantom" departments
+  //   - Wasted space: Repeating long strings
+  // ===========================================================================
   users    User[]
   vehicles Vehicle[]
   drivers  Driver[]
@@ -28,28 +167,119 @@ model Department {
   assignments Assignment[]
 }
 
-// ─── Users ───────────────────────────────────────────────────────────────────
-// System users with roles and authentication
+// =============================================================================
+// TABLE: User
+// =============================================================================
+// WHAT IS THIS TABLE?
+// ------------------
+// Users are people who can log into the system. Each user has a role that
+// determines what they can see and do.
+//
+// WHY SEPARATE FROM DRIVER?
+// ------------------------
+// Not all users are drivers, and not all drivers are system users.
+//   - A Fleet Manager is a User but not a Driver
+//   - A Driver might be a User (to log in) AND have a Driver profile
+//   - A Staff member is a User but not a Driver
+//
+// This separation allows:
+//   - One person to have multiple roles (e.g., Driver + Staff)
+//   - Drivers who don't need system access (no User record)
+//   - System users who don't drive (no Driver record)
+// =============================================================================
 model User {
   id           String   @id @default(cuid())
+
+  // BASIC INFO
   name         String
-  email        String   @unique
+  email        String   @unique  // No two users can share an email
+
+  // PASSWORD
+  // ---------
+  // @map("password_hash"): Stores as "password_hash" in database but
+  // "passwordHash" in Prisma client. This follows database naming conventions
+  // (snake_case) while keeping JavaScript conventions (camelCase).
+  //
+  // WHY NOT STORE PLAIN PASSWORDS?
+  //   - If database is hacked, all passwords are exposed
+  //   - We store a HASH (bcrypt) — a one-way transformation
+  //   - Even if someone reads the hash, they can't reverse it
   passwordHash String   @map("password_hash")
-  role         String   @default("Staff") // Admin, Fleet Manager, Driver, Staff, Supervisor
+
+  // ROLE
+  // ----
+  // Default is "Staff" — the most basic role.
+  // Roles: Admin, Fleet Manager, Driver, Staff, Supervisor
+  //
+  // WHY STORE ROLE AS STRING?
+  //   - Simple: Easy to understand and query
+  //   - Flexible: Add new roles without schema changes
+  //   - Frontend already has role-based UI
+  //
+  // ALTERNATIVE: Separate Role table with foreign key
+  //   - More normalized but more complex
+  //   - Overkill for a small set of fixed roles
+  role         String   @default("Staff")
+
   phone        String?
-  status       String   @default("Active") // Active, Inactive
+
+  // STATUS
+  // ------
+  // Active: User can log in
+  // Inactive: User cannot log in (but data is preserved)
+  //
+  // WHY SOFT DELETE (status) INSTEAD OF HARD DELETE?
+  //   - Preserves history: "Who approved this request?" still works
+  //   - Accidental deletion recovery: Just set status back to Active
+  //   - Audit trail: All actions by this user are preserved
+  status       String   @default("Active")
+
   lastLogin    DateTime? @map("last_login")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  // Relationships
+  // ===========================================================================
+  // RELATIONSHIPS
+  // ===========================================================================
+  // A user can be associated with many records across the system.
+  // Each relationship answers a question:
+  //   - requests: "Which requests did this user make?"
+  //   - reviewedRequests: "Which requests did this user approve/decline?"
+  //   - trips: "Which trips is this user assigned to drive?"
+  //   - notifications: "Which notifications belong to this user?"
+  // ===========================================================================
+
+  // Department relationship
+  // -----------------------
+  // A user belongs to ONE department (or none).
+  // departmentId is a FOREIGN KEY pointing to Department.id
   departmentId String?    @map("department_id")
   department   Department? @relation(fields: [departmentId], references: [id])
 
+  // Request relationships
+  // ---------------------
+  // A user can MAKE many requests (as requester)
+  // A user can REVIEW many requests (as reviewer)
+  // These are TWO SEPARATE relationships to the same table.
+  //
+  // WHY TWO RELATIONSHIPS?
+  //   - "requests" → requests where this user is the requester
+  //   - "reviewedRequests" → requests where this user is the reviewer
+  //   - Prisma needs to know which is which, hence the named relations
   requests          VehicleRequest[]  @relation("Requester")
   reviewedRequests  VehicleRequest[]  @relation("Reviewer")
+
+  // Assignment relationship
+  // -----------------------
+  // A user can CREATE many assignments (as the Fleet Manager who assigns)
   assignments       Assignment[]    @relation("AssignmentAssignedBy")
+
+  // Trip relationship
+  // -----------------
+  // A user can be assigned to drive many trips
   trips             Trip[]            @relation("DriverTrips")
+
+  // Other relationships
   fuelRecords       FuelRecord[]
   inspections        Inspection[]
   issues            Issue[]
@@ -57,30 +287,86 @@ model User {
   notifications     Notification[]
   activityLogs      ActivityLog[]
 
+  // TABLE NAME MAPPING
+  // ------------------
+  // @@map("users"): Table is called "users" in database (not "User")
+  // This follows the convention of plural, lowercase table names.
   @@map("users")
 }
 
-// ─── Vehicles ────────────────────────────────────────────────────────────────
-// Fleet vehicles with registration, status, and mileage
+// =============================================================================
+// TABLE: Vehicle
+// =============================================================================
+// WHAT IS THIS TABLE?
+// ------------------
+// Vehicles are the fleet's cars, trucks, SUVs, etc.
+// Each vehicle has a registration number, status, and maintenance history.
+//
+// WHY STORE STATUS AS STRING?
+// --------------------------
+// Status can be: Available, Assigned, In service, Maintenance
+//
+// We use a string with a default instead of an enum because:
+//   - SQLite doesn't support enums natively
+//   - Easier to add new statuses without migrations
+//   - Frontend already validates status values
+//
+// THE STATUS LIFECYCLE:
+//   Available → Assigned → In service → Maintenance → Available
+// =============================================================================
 model Vehicle {
   id              String   @id @default(cuid())
+
+  // REGISTRATION NUMBER
+  // -------------------
+  // @unique: No two vehicles can have the same registration.
+  // This is the vehicle's license plate (e.g., "UAX 482C").
   registration    String   @unique
+
   make            String
   model           String
-  vehicleType     String   @map("vehicle_type")
+  vehicleType     String   @map("vehicle_type")  // SUV, Pickup, Truck, etc.
   year            Int
   color           String?
-  fuelType        String   @default("Diesel") @map("fuel_type") // Petrol, Diesel, Hybrid, Electric
-  status          String   @default("Available") // Available, Assigned, In service, Maintenance
+
+  // FUEL TYPE
+  // ---------
+  // Default is "Diesel" because most fleet vehicles in Uganda are diesel.
+  fuelType        String   @default("Diesel") @map("fuel_type")
+
+  // STATUS
+  // ------
+  // The current state of the vehicle.
+  // This field is CRITICAL — it determines:
+  //   - Whether the vehicle can be assigned to trips
+  //   - What the dashboard shows
+  //   - What actions are available
+  status          String   @default("Available")
+
+  // MILEAGE
+  // -------
+  // Current odometer reading in kilometers.
+  // Updated after each trip and fuel record.
   mileage         Int      @default(0)
+
+  // SERVICE DATES
+  // -------------
+  // Stored as strings (not DateTime) because the frontend uses
+  // human-readable formats like "12 Jun 2024" rather than ISO dates.
   lastService     String?  @map("last_service")
   nextService     String?  @map("next_service")
   insuranceExpiry String?  @map("insurance_expiry")
   inspectionExpiry String? @map("inspection_expiry")
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  // Relationships
+  // ===========================================================================
+  // RELATIONSHIPS
+  // ===========================================================================
+  // A vehicle can have many records across the system.
+  // Each relationship answers: "What happened to this vehicle?"
+  // ===========================================================================
   departmentId String?    @map("department_id")
   department   Department? @relation(fields: [departmentId], references: [id])
 
@@ -95,23 +381,59 @@ model Vehicle {
   @@map("vehicles")
 }
 
-// ─── Drivers ─────────────────────────────────────────────────────────────────
-// Driver profiles with license and status
+// =============================================================================
+// TABLE: Driver
+// =============================================================================
+// WHAT IS THIS TABLE?
+// ------------------
+// Drivers are people who drive the fleet vehicles.
+// This table stores driver-specific information (license, rating, etc.)
+//
+// WHY SEPARATE FROM USER?
+// ----------------------
+//   - Not all drivers need system access (no User record)
+//   - Not all users are drivers (Fleet Manager, Admin, Staff)
+//   - A driver might have a User record for login purposes
+//   - This allows the same person to be both a Driver and a User
+//
+// THE DRIVER-USER RELATIONSHIP:
+//   - Driver table: stores driving-specific data (license, rating)
+//   - User table: stores login and role data
+//   - They can be linked via email or a foreign key
+// =============================================================================
 model Driver {
   id             String   @id @default(cuid())
+
   name           String
   phone          String
   email          String   @unique
+
+  // LICENSE INFORMATION
+  // -------------------
+  // @unique: No two drivers can have the same license number.
   licenseNumber  String   @unique @map("license_number")
   licenseExpiry  String   @map("license_expiry")
-  status         String   @default("Active") // Active, On leave, Suspended, Inactive
+
+  // STATUS
+  // ------
+  // Active: Can be assigned to trips
+  // On leave: Temporarily unavailable
+  // Suspended: Not allowed to drive (disciplinary)
+  // Inactive: No longer with the organization
+  status         String   @default("Active")
+
+  // PERFORMANCE METRICS
+  // -------------------
   tripsCompleted Int      @default(0) @map("trips_completed")
-  rating         Float    @default(5.0)
+  rating         Float    @default(5.0)  // 0.0 to 5.0
+
   joinDate       String   @map("join_date")
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  // Relationships
+  // ===========================================================================
+  // RELATIONSHIPS
+  // ===========================================================================
   departmentId String?    @map("department_id")
   department   Department? @relation(fields: [departmentId], references: [id])
 
@@ -124,124 +446,322 @@ model Driver {
   @@map("drivers")
 }
 
-// ─── Vehicle Requests ────────────────────────────────────────────────────────
-// Staff requests for vehicles (pending → approved/declined)
+// =============================================================================
+// TABLE: VehicleRequest
+// =============================================================================
+// WHAT IS THIS TABLE?
+// ------------------
+// When a staff member needs a vehicle, they submit a request.
+// The Fleet Manager reviews and approves/declines it.
+//
+// THE REQUEST LIFECYCLE:
+//   Pending → Approved → Assigned → Completed
+//      ↓
+//   Declined (with reason)
+//
+// WHY STORE BOTH REQUESTER AND REVIEWER?
+// -------------------------------------
+//   - requesterId: Who made the request (Staff user)
+//   - reviewedById: Who approved/declined it (Fleet Manager)
+//   - This creates an audit trail: "Who asked? Who approved?"
+// =============================================================================
 model VehicleRequest {
   id            String   @id @default(cuid())
+
   destination   String
   purpose       String
   startDate     String   @map("start_date")
   endDate       String   @map("end_date")
-  status        String   @default("Pending") // Pending, Approved, Declined, Completed
+
+  // STATUS
+  // ------
+  // Pending: Awaiting review
+  // Approved: Approved by Fleet Manager, awaiting assignment
+  // Declined: Rejected by Fleet Manager (with reason)
+  // Completed: Trip has been completed
+  status        String   @default("Pending")
+
+  // REVIEW INFORMATION
+  // ------------------
+  // Set when a Fleet Manager approves or declines the request.
   reviewedById  String?  @map("reviewed_by_id")
   reviewedBy    User?    @relation("Reviewer", fields: [reviewedById], references: [id])
   reviewedDate  String?  @map("reviewed_date")
-  reviewReason  String?  @map("review_reason")
+  reviewReason  String?  @map("review_reason")  // Why declined (or notes if approved)
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  // Relationships
+  // ===========================================================================
+  // RELATIONSHIPS
+  // ===========================================================================
+
+  // WHO MADE THE REQUEST?
+  // --------------------
+  // Every request has exactly one requester (a User).
+  // This is a MANY-TO-ONE relationship:
+  //   Many requests → One user (the requester)
   requesterId String  @map("requester_id")
   requester   User    @relation("Requester", fields: [requesterId], references: [id])
 
+  // WHICH DEPARTMENT?
+  // ----------------
+  // The department the requester belongs to.
   departmentId String?    @map("department_id")
   department   Department? @relation(fields: [departmentId], references: [id])
 
+  // ASSIGNMENT (if approved)
+  // ------------------------
+  // @unique: A request can have at most ONE assignment.
+  // This prevents double-booking the same request.
   assignment Assignment?
 
   @@map("vehicle_requests")
 }
 
-// ─── Assignments ─────────────────────────────────────────────────────────────
-// Vehicle-driver pairings for approved requests
+// =============================================================================
+// TABLE: Assignment
+// =============================================================================
+// WHAT IS THIS TABLE?
+// ------------------
+// An assignment links a vehicle to a driver for a specific purpose.
+// It's created when a Fleet Manager approves a request.
+//
+// THE ASSIGNMENT LIFECYCLE:
+//   Active → Completed (trip done)
+//      ↓
+//   Cancelled (no longer needed)
+//
+// WHY @unique ON requestId?
+// ------------------------
+// A request can only have ONE active assignment.
+// This prevents the same request from being assigned twice.
+// =============================================================================
 model Assignment {
   id        String   @id @default(cuid())
+
   startDate String   @map("start_date")
-  endDate   String?  @map("end_date")
-  status    String   @default("Active") // Active, Completed, Cancelled
+  endDate   String?  @map("end_date")  // Null while assignment is active
+  status    String   @default("Active")
   purpose   String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relationships
+  // ===========================================================================
+  // RELATIONSHIPS
+  // ===========================================================================
+
+  // WHICH VEHICLE?
+  // --------------
+  // Every assignment has exactly one vehicle.
   vehicleId String  @map("vehicle_id")
   vehicle   Vehicle @relation(fields: [vehicleId], references: [id])
 
+  // WHICH DRIVER?
+  // -------------
+  // Every assignment has exactly one driver.
   driverId String @map("driver_id")
   driver   Driver @relation(fields: [driverId], references: [id])
 
+  // WHICH DEPARTMENT?
+  // ----------------
   departmentId String?    @map("department_id")
   department   Department? @relation(fields: [departmentId], references: [id])
 
+  // WHICH REQUEST?
+  // --------------
+  // @unique: One request → at most one assignment
   requestId    String?         @unique @map("request_id")
   request      VehicleRequest? @relation(fields: [requestId], references: [id])
+
+  // WHO CREATED THE ASSIGNMENT?
+  // ----------------------------
   assignedById String?         @map("assigned_by_id")
   assignedBy   User?           @relation("AssignmentAssignedBy", fields: [assignedById], references: [id])
 
+  // TRIPS UNDER THIS ASSIGNMENT
+  // ---------------------------
+  // An assignment can have multiple trips (e.g., same vehicle+driver for a week)
   trips Trip[]
 
   @@map("assignments")
 }
 
-// ─── Trips ───────────────────────────────────────────────────────────────────
-// Vehicle trips with departure, return, mileage, and fuel
+// =============================================================================
+// TABLE: Trip
+// =============================================================================
+// WHAT IS THIS TABLE?
+// ------------------
+// A trip is a single journey with a vehicle and driver.
+// It tracks departure, return, mileage, and fuel consumption.
+//
+// THE TRIP LIFECYCLE:
+//   Scheduled → On route → Returned
+//        ↓
+//   Cancelled
+//
+// WHY TWO DRIVER FIELDS?
+// ---------------------
+//   - driverId: The User who is assigned to drive (for login tracking)
+//   - driverId2: The Driver profile (for license and rating info)
+//
+// This dual relationship exists because:
+//   - A trip needs to know WHO is driving (User for authentication)
+//   - A trip also needs driver DETAILS (Driver for license, rating)
+//   - In most cases, the User and Driver are the same person
+//   - But they're stored separately for flexibility
+// =============================================================================
 model Trip {
   id             String    @id @default(cuid())
+
   destination    String
   departure      String
   expectedReturn String    @map("expected_return")
-  actualReturn   String?   @map("actual_return")
-  status         String    @default("Scheduled") // Scheduled, On route, Returned, Cancelled
+  actualReturn   String?   @map("actual_return")  // Null until trip is completed
+
+  // STATUS
+  // ------
+  // Scheduled: Trip is planned but hasn't started
+  // On route: Driver has started the trip
+  // Returned: Trip is completed
+  // Cancelled: Trip was cancelled
+  status         String    @default("Scheduled")
+
   purpose        String?
+
+  // MILEAGE TRACKING
+  // ----------------
+  // mileageStart: Odometer reading when trip begins
+  // mileageEnd: Odometer reading when trip ends
+  // Distance = mileageEnd - mileageStart
   mileageStart   Int       @default(0) @map("mileage_start")
   mileageEnd     Int?      @map("mileage_end")
+
+  // FUEL TRACKING
+  // -------------
+  // fuelUsed: Liters of fuel consumed during the trip
+  // Used to calculate fuel efficiency (km per liter)
   fuelUsed       Float?    @map("fuel_used")
+
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  // Relationships
+  // ===========================================================================
+  // RELATIONSHIPS
+  // ===========================================================================
+
+  // WHICH VEHICLE?
   vehicleId String  @map("vehicle_id")
   vehicle   Vehicle @relation(fields: [vehicleId], references: [id])
 
+  // WHICH DRIVER (User)?
+  // -------------------
+  // Links to the User table for authentication and role checking.
   driverId  String @map("driver_id")
   driver    User   @relation("DriverTrips", fields: [driverId], references: [id])
+
+  // WHICH DRIVER (Driver profile)?
+  // ------------------------------
+  // Links to the Driver table for license and rating info.
   driverId2 String? @map("driver_id_2")
   driver2   Driver? @relation("DriverUser", fields: [driverId2], references: [id])
 
+  // WHICH ASSIGNMENT?
+  // -----------------
+  // The assignment this trip belongs to (if any).
   assignmentId String?      @map("assignment_id")
   assignment   Assignment? @relation(fields: [assignmentId], references: [id])
 
   @@map("trips")
 }
 
-// ─── Maintenance Records ─────────────────────────────────────────────────────
-// Service and repair history for vehicles
+// =============================================================================
+// TABLE: MaintenanceRecord
+// =============================================================================
+// WHAT IS THIS TABLE?
+// ------------------
+// Maintenance records track all service and repair work on vehicles.
+// This includes routine services, repairs, inspections, and emergencies.
+//
+// THE MAINTENANCE LIFECYCLE:
+//   Scheduled → In progress → Completed
+//        ↓
+//   Cancelled
+//
+// WHY STORE COST?
+// --------------
+// To track maintenance spending per vehicle and overall fleet budget.
+// =============================================================================
 model MaintenanceRecord {
   id              String    @id @default(cuid())
-  type            String // Routine service, Repair, Inspection, Emergency
-  status          String    @default("Scheduled") // Scheduled, In progress, Completed, Cancelled
+
+  // TYPE
+  // ----
+  // Routine service: Regular maintenance (oil change, filters, etc.)
+  // Repair: Fixing something that broke
+  // Inspection: Safety or compliance check
+  // Emergency: Urgent, unplanned repair
+  type            String
+
+  // STATUS
+  status          String    @default("Scheduled")
+
   description     String
+
+  // DATES
+  // -----
+  // reportedDate: When the issue was reported
+  // scheduledDate: When maintenance is planned
+  // completedDate: When maintenance was finished (null if not done)
   reportedDate    String    @map("reported_date")
   scheduledDate   String    @map("scheduled_date")
   completedDate   String?   @map("completed_date")
+
+  // COST
+  // ----
+  // 0 if not yet known (e.g., waiting for workshop quote)
   cost            Float     @default(0)
+
+  // PARTS REPLACED
+  // -------------
+  // Stored as a string (comma-separated) for simplicity.
+  // In a more advanced system, this could be a separate Parts table.
   partsReplaced   String?  @map("parts_replaced")
+
   workshop        String
   mileageAtService Int      @map("mileage_at_service")
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
 
-  // Relationships
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // ===========================================================================
+  // RELATIONSHIPS
+  // ===========================================================================
   vehicleId String  @map("vehicle_id")
   vehicle   Vehicle @relation(fields: [vehicleId], references: [id])
 
   @@map("maintenance_records")
 }
 
-// ─── Fuel Records ────────────────────────────────────────────────────────────
-// Fuel consumption records for vehicles
+// =============================================================================
+// TABLE: FuelRecord
+// =============================================================================
+// WHAT IS THIS TABLE?
+// ------------------
+// Fuel records track every fuel purchase for every vehicle.
+// This is used to calculate fuel efficiency and costs.
+//
+// WHY TRACK MILEAGE WITH FUEL?
+// ---------------------------
+// By recording the odometer reading with each fuel purchase, we can calculate:
+//   - Fuel efficiency: km per liter
+//   - Cost per kilometer
+//   - Total fuel spend per vehicle
+//   - Whether fuel usage is normal or excessive
+// =============================================================================
 model FuelRecord {
   id           String   @id @default(cuid())
+
   date         String
   liters       Float
   costPerLiter Float    @map("cost_per_liter")
@@ -251,10 +771,13 @@ model FuelRecord {
   fuelType     String   @map("fuel_type")
   createdAt    DateTime @default(now())
 
-  // Relationships
+  // ===========================================================================
+  // RELATIONSHIPS
+  // ===========================================================================
   vehicleId String  @map("vehicle_id")
   vehicle   Vehicle @relation(fields: [vehicleId], references: [id])
 
+  // Driver who submitted the fuel record
   driverId  String  @map("driver_id")
   driver    User?   @relation(fields: [driverId], references: [id])
   driverId2 String? @map("driver_id_2")
@@ -263,39 +786,68 @@ model FuelRecord {
   @@map("fuel_records")
 }
 
-// ─── Expenses ────────────────────────────────────────────────────────────────
-// General fleet expenses
+// =============================================================================
+// TABLE: Expense
+// =============================================================================
+// WHAT IS THIS TABLE?
+// ------------------
+// General fleet expenses that aren't fuel or maintenance.
+// Examples: tolls, parking, cleaning, fines, etc.
+// =============================================================================
 model Expense {
   id          String   @id @default(cuid())
-  category    String
+
+  category    String   // e.g., "Tolls", "Parking", "Cleaning", "Fines"
   amount      Float
   date        String
   description String?
+
+  // WHO RECORDED THIS EXPENSE?
   recordedById String? @map("recorded_by_id")
   recordedBy   User?   @relation(fields: [recordedById], references: [id])
+
   createdAt   DateTime @default(now())
 
-  // Relationships
+  // ===========================================================================
+  // RELATIONSHIPS
+  // ===========================================================================
   vehicleId String  @map("vehicle_id")
   vehicle   Vehicle @relation(fields: [vehicleId], references: [id])
 
   @@map("expenses")
 }
 
-// ─── Inspections ─────────────────────────────────────────────────────────────
-// Vehicle inspections (pre-trip, post-trip, weekly, monthly)
+// =============================================================================
+// TABLE: Inspection
+// =============================================================================
+// WHAT IS THIS TABLE?
+// ------------------
+// Inspections are safety checks performed by drivers.
+// Types: Pre-trip, Post-trip, Weekly, Monthly
+//
+// WHY INSPECTIONS MATTER:
+//   - Safety: Catch problems before they cause accidents
+//   - Compliance: Required by law in many countries
+//   - Maintenance: Early detection of issues
+// =============================================================================
 model Inspection {
   id          String   @id @default(cuid())
-  type        String // Pre-trip, Post-trip, Weekly, Monthly
-  result      String   @default("Pending") // Passed, Failed, Pending
+
+  type        String   // Pre-trip, Post-trip, Weekly, Monthly
+  result      String   @default("Pending")  // Passed, Failed, Pending
   mileage     Int
   notes       String?
   date        String
+
+  // WHO SUBMITTED THE INSPECTION?
   submittedById String? @map("submitted_by_id")
   submittedBy   User?   @relation(fields: [submittedById], references: [id])
+
   createdAt   DateTime @default(now())
 
-  // Relationships
+  // ===========================================================================
+  // RELATIONSHIPS
+  // ===========================================================================
   vehicleId String  @map("vehicle_id")
   vehicle   Vehicle @relation(fields: [vehicleId], references: [id])
 
@@ -305,22 +857,47 @@ model Inspection {
   @@map("inspections")
 }
 
-// ─── Issues ──────────────────────────────────────────────────────────────────
-// Accidents, incidents, and vehicle problems
+// =============================================================================
+// TABLE: Issue
+// =============================================================================
+// WHAT IS THIS TABLE?
+// ------------------
+// Issues are problems reported by drivers.
+// Types: Vehicle problem, Accident, Incident, Other
+//
+// THE ISSUE LIFECYCLE:
+//   Open → In progress → Resolved
+//
+// WHY TRACK SEVERITY?
+// ------------------
+//   - Low: Minor issue, can wait
+//   - Medium: Needs attention soon
+//   - High: Urgent, vehicle may be unsafe
+//   - Critical: Safety risk, vehicle must not be used
+//
+// When a Critical issue is reported, the vehicle status is automatically
+// set to "Maintenance" to prevent it from being assigned to trips.
+// =============================================================================
 model Issue {
   id          String   @id @default(cuid())
-  type        String // Vehicle problem, Accident, Incident, Other
-  severity    String // Low, Medium, High, Critical
-  status      String   @default("Open") // Open, In progress, Resolved
+
+  type        String   // Vehicle problem, Accident, Incident, Other
+  severity    String   // Low, Medium, High, Critical
+  status      String   @default("Open")
   description String
   location    String?
   date        String
+
+  // WHO REPORTED THE ISSUE?
   reportedById String? @map("reported_by_id")
   reportedBy   User?   @relation(fields: [reportedById], references: [id])
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // Relationships
+  // ===========================================================================
+  // RELATIONSHIPS
+  // ===========================================================================
   vehicleId String  @map("vehicle_id")
   vehicle   Vehicle @relation(fields: [vehicleId], references: [id])
 
@@ -330,39 +907,179 @@ model Issue {
   @@map("issues")
 }
 
-// ─── Notifications ───────────────────────────────────────────────────────────
-// User notifications
+// =============================================================================
+// TABLE: Notification
+// =============================================================================
+// WHAT IS THIS TABLE?
+// ------------------
+// Notifications are messages shown to users in the UI.
+// They keep users informed about important events.
+//
+// NOTIFICATION TYPES:
+//   - request: "Your request has been approved"
+//   - assignment: "You have been assigned to a trip"
+//   - maintenance: "Vehicle UAX 482C is due for service"
+//   - document: "Insurance document expiring soon"
+//   - system: "System maintenance scheduled"
+//
+// WHY A SEPARATE TABLE?
+// --------------------
+//   - Persistence: Notifications survive page refreshes
+//   - History: Users can see past notifications
+//   - Unread count: Badge shows number of unread notifications
+//   - Linking: Each notification can link to relevant page
+// =============================================================================
 model Notification {
-  id        String   @id @default(cuid())
-  type      String // maintenance, request, assignment, document, system
+  id        String   @id @id @default(cuid())
+
+  type      String   // maintenance, request, assignment, document, system
   title     String
   message   String
+
+  // READ STATUS
+  // -----------
+  // false = unread (show badge)
+  // true = read (no badge)
   read      Boolean  @default(false)
+
+  // LINK
+  // ----
+  // Optional link to relevant page (e.g., "/requests/REQ-0248")
   link      String?
+
   timestamp DateTime @default(now())
   createdAt DateTime @default(now())
 
-  // Relationships
+  // ===========================================================================
+  // RELATIONSHIPS
+  // ===========================================================================
+  // WHO IS THIS NOTIFICATION FOR?
+  // -----------------------------
+  // Each notification belongs to one user.
+  // A user can have many notifications.
   userId String @map("user_id")
   user   User   @relation(fields: [userId], references: [id])
 
   @@map("notifications")
 }
 
-// ─── Activity Logs ───────────────────────────────────────────────────────────
-// Audit trail of system actions
+// =============================================================================
+// TABLE: ActivityLog
+// =============================================================================
+// WHAT IS THIS TABLE?
+// ------------------
+// Activity logs are an audit trail of every action in the system.
+// They answer: "Who did what, when?"
+//
+// WHY AN AUDIT TRAIL?
+// ------------------
+//   - Accountability: "Who approved this request?"
+//   - Debugging: "What happened to this vehicle?"
+//   - Compliance: Required for some regulations
+//   - Security: Detect unauthorized actions
+//
+// EXAMPLE LOG ENTRIES:
+//   - User "Admin" created user "john@fleet.ug"
+//   - User "Fleet Manager" approved request "REQ-0248"
+//   - User "Robert Okello" started trip "TRP-0914"
+//   - Vehicle "UAX 482C" status changed to "Maintenance"
+// =============================================================================
 model ActivityLog {
-  id         String   @id @default(cuid())
+  id         String   @id @id @default(cuid())
+
+  // WHAT ACTION WAS PERFORMED?
+  // --------------------------
+  // Examples: "created", "updated", "deleted", "approved", "declined",
+  //           "started", "completed", "assigned", "reported"
   action     String
+
+  // WHAT TYPE OF ENTITY WAS AFFECTED?
+  // ---------------------------------
+  // Examples: "Vehicle", "Driver", "User", "Request", "Trip"
   entityType String   @map("entity_type")
+
+  // WHICH SPECIFIC ENTITY?
+  // ----------------------
+  // The ID of the affected entity (e.g., "VHC-001")
   entityId   String   @map("entity_id")
+
+  // ADDITIONAL DETAILS
+  // ------------------
+  // JSON string with extra context about the action
   details    String?
+
   timestamp  DateTime @default(now())
   createdAt  DateTime @default(now())
 
-  // Relationships
+  // ===========================================================================
+  // RELATIONSHIPS
+  // ===========================================================================
+  // WHO PERFORMED THE ACTION?
+  // -------------------------
+  // Links to the User who did the action.
+  // Nullable because some actions might be system-generated.
   userId String @map("user_id")
   user   User   @relation(fields: [userId], references: [id])
 
   @@map("activity_logs")
 }
+
+// =============================================================================
+// END OF SCHEMA
+// =============================================================================
+//
+// SUMMARY OF ALL TABLES:
+// ---------------------
+//   1. Department          — Organizational units
+//   2. User                — System users with roles
+//   3. Vehicle             — Fleet vehicles
+//   4. Driver              — Driver profiles
+//   5. VehicleRequest      — Vehicle requests from staff
+//   6. Assignment          — Vehicle-driver pairings
+//   7. Trip                — Individual trips
+//   8. MaintenanceRecord   — Service and repair history
+//   9. FuelRecord          — Fuel purchases
+//   10. Expense            — General fleet expenses
+//   11. Inspection         — Safety inspections
+//   12. Issue              — Reported problems/accidents
+//   13. Notification       — User notifications
+//   14. ActivityLog        — Audit trail
+//
+// RELATIONSHIP MAP:
+// ----------------
+// Department ──┬── User (many users per department)
+//              ├── Vehicle (many vehicles per department)
+//              ├── Driver (many drivers per department)
+//              ├── VehicleRequest (many requests per department)
+//              └── Assignment (many assignments per department)
+//
+// User ────────┬── VehicleRequest (as requester)
+//              ├── VehicleRequest (as reviewer)
+//              ├── Assignment (as assigned by)
+//              ├── Trip (as driver)
+//              ├── FuelRecord (as driver)
+//              ├── Inspection (as submitted by)
+//              ├── Issue (as reported by)
+//              ├── Expense (as recorded by)
+//              ├── Notification (as recipient)
+//              └── ActivityLog (as actor)
+//
+// Vehicle ─────┬── Assignment
+//              ├── Trip
+//              ├── MaintenanceRecord
+//              ├── FuelRecord
+//              ├── Inspection
+//              ├── Issue
+//              └── Expense
+//
+// Driver ──────┬── Assignment
+//              ├── Trip
+//              ├── FuelRecord
+//              ├── Inspection
+//              └── Issue
+//
+// VehicleRequest ── Assignment (one-to-one)
+//
+// Assignment ────── Trip (one-to-many)
+//
+// =============================================================================
