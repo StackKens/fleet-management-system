@@ -52,6 +52,9 @@ app.use('/api/vehicles', require('./routes/vehicle.routes'));
 // Vehicle request management routes
 app.use('/api/requests', require('./routes/request.routes'));
 
+// Assignment management routes
+app.use('/api/assignments', require('./routes/assignment.routes'));
+
 // ─── Error Handler ────────────────────────────────────────────────────────────
 // This must be last — catches all errors from routes above
 app.use(errorHandler);
