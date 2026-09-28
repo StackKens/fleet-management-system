@@ -119,7 +119,7 @@ export function FleetShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="ops-shell flex">
-      <div className="hidden md:block">
+      <div className="fixed inset-y-0 left-0 z-40 hidden md:block">
         <Sidebar onNavigate={() => setMobileOpen(false)} />
       </div>
       {mobileOpen ? (
@@ -140,7 +140,7 @@ export function FleetShell({ children }: { children: ReactNode }) {
         </div>
       ) : null}
 
-      <div className="flex min-h-dvh min-w-0 flex-1 flex-col">
+      <div className="flex min-h-dvh min-w-0 flex-1 flex-col md:ml-[252px]">
         <header className="sticky top-0 z-30 flex h-[76px] items-center justify-between border-b border-border bg-card px-5 sm:px-8">
           <div className="flex items-center gap-3">
             <button
