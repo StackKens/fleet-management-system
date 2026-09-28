@@ -317,7 +317,7 @@ export default function Users() {
           <FormField label="Full Name" required error={formErrors.name}>
             <Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="e.g., Jane Doe" />
           </FormField>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField label="Email" required error={formErrors.email}>
               <Input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder="e.g., jane@fleet.ug" />
             </FormField>
@@ -325,7 +325,7 @@ export default function Users() {
               <Input value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} placeholder="e.g., +256 772 123 456" />
             </FormField>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField label="Role" required>
               <Select value={formData.role} onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}>
                 <option value="Staff">Staff</option>
@@ -363,7 +363,7 @@ export default function Users() {
           <FormField label="Full Name" required error={formErrors.name}>
             <Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
           </FormField>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField label="Email" required error={formErrors.email}>
               <Input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
             </FormField>
@@ -371,7 +371,7 @@ export default function Users() {
               <Input value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
             </FormField>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField label="Role" required>
               <Select value={formData.role} onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}>
                 <option value="Staff">Staff</option>

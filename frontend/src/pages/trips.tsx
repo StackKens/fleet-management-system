@@ -275,7 +275,7 @@ export default function Trips() {
         }
       >
         <form onSubmit={handleAddTrip} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField label="Vehicle" required error={formErrors.vehicle}>
               <Select value={formData.vehicle} onChange={(e) => setFormData({ ...formData, vehicle: e.target.value })}>
                 <option value="">Select available vehicle...</option>
@@ -306,7 +306,7 @@ export default function Trips() {
           <FormField label="Destination" required error={formErrors.destination}>
             <Input value={formData.destination} onChange={(e) => setFormData({ ...formData, destination: e.target.value })} placeholder="Enter destination" />
           </FormField>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField label="Departure" required error={formErrors.departure}>
               <Input value={formData.departure} onChange={(e) => setFormData({ ...formData, departure: e.target.value })} placeholder="e.g., Tomorrow, 06:00" />
             </FormField>
@@ -334,7 +334,7 @@ export default function Trips() {
       >
         {selectedTripData && (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-sm">
               <div>
                 <p className="text-xs text-muted-foreground">Vehicle</p>
                 <p className="mt-1 data-mono font-medium text-foreground">{selectedTripData.vehicle}</p>

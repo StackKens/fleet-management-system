@@ -388,7 +388,7 @@ export default function Vehicles() {
         }
       >
         <form onSubmit={handleAddVehicle} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField label="Registration" required error={formErrors.registration}>
               <Input value={formData.registration} onChange={(e) => setFormData({ ...formData, registration: e.target.value })} placeholder="e.g., UAX 123A" />
             </FormField>
@@ -396,7 +396,7 @@ export default function Vehicles() {
               <Input value={formData.vehicleType} onChange={(e) => setFormData({ ...formData, vehicleType: e.target.value })} placeholder="e.g., Field SUV" />
             </FormField>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField label="Make" required error={formErrors.make}>
               <Input value={formData.make} onChange={(e) => setFormData({ ...formData, make: e.target.value })} placeholder="e.g., Toyota" />
             </FormField>
@@ -404,7 +404,7 @@ export default function Vehicles() {
               <Input value={formData.model} onChange={(e) => setFormData({ ...formData, model: e.target.value })} placeholder="e.g., Land Cruiser" />
             </FormField>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField label="Year" required error={formErrors.year}>
               <Input type="number" value={formData.year} onChange={(e) => setFormData({ ...formData, year: e.target.value })} placeholder="e.g., 2024" />
             </FormField>
@@ -412,7 +412,7 @@ export default function Vehicles() {
               <Input value={formData.color} onChange={(e) => setFormData({ ...formData, color: e.target.value })} placeholder="e.g., White" />
             </FormField>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField label="Fuel Type">
               <Select value={formData.fuelType} onChange={(e) => setFormData({ ...formData, fuelType: e.target.value as FuelType })}>
                 <option value="Diesel">Diesel</option>
@@ -428,7 +428,7 @@ export default function Vehicles() {
           <FormField label="Department" required error={formErrors.department}>
             <Input value={formData.department} onChange={(e) => setFormData({ ...formData, department: e.target.value })} placeholder="e.g., Field Operations" />
           </FormField>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField label="Last Service">
               <Input value={formData.lastService} onChange={(e) => setFormData({ ...formData, lastService: e.target.value })} placeholder="e.g., 01 Jan 2024" />
             </FormField>
@@ -436,7 +436,7 @@ export default function Vehicles() {
               <Input value={formData.nextService} onChange={(e) => setFormData({ ...formData, nextService: e.target.value })} placeholder="e.g., 01 Jul 2024" />
             </FormField>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField label="Insurance Expiry">
               <Input value={formData.insuranceExpiry} onChange={(e) => setFormData({ ...formData, insuranceExpiry: e.target.value })} placeholder="e.g., 01 Jan 2025" />
             </FormField>
@@ -465,7 +465,7 @@ export default function Vehicles() {
         }
       >
         <form onSubmit={handleEditVehicle} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField label="Registration" required error={formErrors.registration}>
               <Input value={formData.registration} onChange={(e) => setFormData({ ...formData, registration: e.target.value })} />
             </FormField>
@@ -473,7 +473,7 @@ export default function Vehicles() {
               <Input value={formData.vehicleType} onChange={(e) => setFormData({ ...formData, vehicleType: e.target.value })} />
             </FormField>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField label="Make" required error={formErrors.make}>
               <Input value={formData.make} onChange={(e) => setFormData({ ...formData, make: e.target.value })} />
             </FormField>
@@ -481,7 +481,7 @@ export default function Vehicles() {
               <Input value={formData.model} onChange={(e) => setFormData({ ...formData, model: e.target.value })} />
             </FormField>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField label="Year" required error={formErrors.year}>
               <Input type="number" value={formData.year} onChange={(e) => setFormData({ ...formData, year: e.target.value })} />
             </FormField>
@@ -489,7 +489,7 @@ export default function Vehicles() {
               <Input value={formData.color} onChange={(e) => setFormData({ ...formData, color: e.target.value })} />
             </FormField>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField label="Fuel Type">
               <Select value={formData.fuelType} onChange={(e) => setFormData({ ...formData, fuelType: e.target.value as FuelType })}>
                 <option value="Diesel">Diesel</option>
@@ -505,7 +505,7 @@ export default function Vehicles() {
           <FormField label="Department" required error={formErrors.department}>
             <Input value={formData.department} onChange={(e) => setFormData({ ...formData, department: e.target.value })} />
           </FormField>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField label="Last Service">
               <Input value={formData.lastService} onChange={(e) => setFormData({ ...formData, lastService: e.target.value })} />
             </FormField>
@@ -513,7 +513,7 @@ export default function Vehicles() {
               <Input value={formData.nextService} onChange={(e) => setFormData({ ...formData, nextService: e.target.value })} />
             </FormField>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField label="Insurance Expiry">
               <Input value={formData.insuranceExpiry} onChange={(e) => setFormData({ ...formData, insuranceExpiry: e.target.value })} />
             </FormField>

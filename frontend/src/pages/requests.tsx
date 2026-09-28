@@ -330,7 +330,7 @@ export default function Requests() {
       >
         {selectedRequest && (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-sm">
               <div>
                 <p className="text-xs text-muted-foreground">Destination</p>
                 <p className="mt-1 font-medium text-foreground">{selectedRequest.destination}</p>

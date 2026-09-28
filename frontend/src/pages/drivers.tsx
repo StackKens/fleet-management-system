@@ -316,7 +316,7 @@ export default function Drivers() {
           <FormField label="Full Name" required error={formErrors.name}>
             <Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="e.g., John Doe" />
           </FormField>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField label="Phone" required error={formErrors.phone}>
               <Input value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} placeholder="e.g., +256 772 123 456" />
             </FormField>
@@ -324,7 +324,7 @@ export default function Drivers() {
               <Input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder="e.g., john@fleet.ug" />
             </FormField>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField label="License Number" required error={formErrors.licenseNumber}>
               <Input value={formData.licenseNumber} onChange={(e) => setFormData({ ...formData, licenseNumber: e.target.value })} placeholder="e.g., DL-2024-123456" />
             </FormField>
@@ -359,7 +359,7 @@ export default function Drivers() {
           <FormField label="Full Name" required error={formErrors.name}>
             <Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
           </FormField>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField label="Phone" required error={formErrors.phone}>
               <Input value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
             </FormField>
@@ -367,7 +367,7 @@ export default function Drivers() {
               <Input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
             </FormField>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField label="License Number" required error={formErrors.licenseNumber}>
               <Input value={formData.licenseNumber} onChange={(e) => setFormData({ ...formData, licenseNumber: e.target.value })} />
             </FormField>

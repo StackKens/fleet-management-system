@@ -272,7 +272,7 @@ export default function Fuel() {
         }
       >
         <form onSubmit={handleAddRecord} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField label="Vehicle" required error={formErrors.vehicle}>
               <Select value={formData.vehicle} onChange={(e) => setFormData({ ...formData, vehicle: e.target.value })}>
                 <option value="">Select vehicle...</option>
@@ -291,7 +291,7 @@ export default function Fuel() {
               />
             </FormField>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField label="Date" required error={formErrors.date}>
               <Input
                 type="date"
@@ -308,7 +308,7 @@ export default function Fuel() {
               </Select>
             </FormField>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField label="Liters" required error={formErrors.liters}>
               <Input
                 type="number"
@@ -327,7 +327,7 @@ export default function Fuel() {
               />
             </FormField>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField label="Mileage (km)" required error={formErrors.mileage}>
               <Input
                 type="number"
