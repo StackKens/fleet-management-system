@@ -6,12 +6,7 @@ import {
   Mail,
   ShieldCheck,
   Star,
-  Activity,
-  Truck,
-  FileText,
-  AlertTriangle,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Avatar } from '@/components/ui/avatar';

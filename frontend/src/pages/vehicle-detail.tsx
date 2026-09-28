@@ -2,14 +2,7 @@ import { useParams, Link } from 'wouter';
 import {
   ArrowLeft,
   Truck,
-  Edit,
   Wrench,
-  Fuel,
-  Activity,
-  FileText,
-  ShieldCheck,
-  CalendarDays,
-  Gauge,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
