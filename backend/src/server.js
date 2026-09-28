@@ -64,6 +64,12 @@ app.use('/api/maintenance', require('./routes/maintenance.routes'));
 // Fuel management routes
 app.use('/api/fuel', require('./routes/fuel.routes'));
 
+// Inspection management routes
+app.use('/api/inspections', require('./routes/inspection.routes'));
+
+// Issue management routes
+app.use('/api/issues', require('./routes/issue.routes'));
+
 // ─── Error Handler ────────────────────────────────────────────────────────────
 // This must be last — catches all errors from routes above
 app.use(errorHandler);
