@@ -9,11 +9,14 @@ import type {
   Assignment,
   AppNotification,
   Department,
+  Inspection,
+  Issue,
   VehicleStatus,
   RequestStatus,
   TripStatus,
   MaintenanceStatus,
   DriverStatus,
+  IssueStatus,
 } from '@/data/types';
 import {
   vehicles as mockVehicles,
@@ -35,6 +38,17 @@ const mockDepartments: Department[] = [
   { id: 'DEP-006', name: 'Programmes', head: 'Agnes Kiconco', vehicleCount: 4, driverCount: 5 },
 ];
 
+const mockInspections: Inspection[] = [
+  { id: 'INS-001', vehicle: 'UAX 482C', type: 'Pre-trip', result: 'Passed', mileage: 128420, notes: 'All systems normal', date: '18 Jul 2024', submittedBy: 'Robert Okello' },
+  { id: 'INS-002', vehicle: 'UAX 482C', type: 'Post-trip', result: 'Passed', mileage: 128650, notes: 'Minor wear on front tires noted', date: '17 Jul 2024', submittedBy: 'Robert Okello' },
+  { id: 'INS-003', vehicle: 'UAX 482C', type: 'Weekly', result: 'Pending', mileage: 128420, notes: 'Scheduled weekly inspection', date: '16 Jul 2024', submittedBy: 'Robert Okello' },
+];
+
+const mockIssues: Issue[] = [
+  { id: 'ISS-001', vehicle: 'UAX 482C', type: 'Vehicle problem', severity: 'Medium', status: 'In progress', description: 'Brake noise from front left wheel', location: 'Kampala', date: '15 Jul 2024', reportedBy: 'Robert Okello' },
+  { id: 'ISS-002', vehicle: 'UAX 482C', type: 'Vehicle problem', severity: 'Low', status: 'Resolved', description: 'Engine warning light on dashboard', location: 'Kampala', date: '10 Jul 2024', reportedBy: 'Robert Okello' },
+];
+
 let notificationCounter = 100;
 let requestCounter = 248;
 let vehicleCounter = 12;
@@ -43,6 +57,8 @@ let tripCounter = 915;
 let maintenanceCounter = 8;
 let fuelCounter = 7;
 let assignmentCounter = 10;
+let inspectionCounter = 3;
+let issueCounter = 2;
 
 function generateId(prefix: string, num: number) {
   return `${prefix}-${num}`;
@@ -61,6 +77,8 @@ type FleetState = {
   assignments: Assignment[];
   notifications: AppNotification[];
   departments: Department[];
+  inspections: Inspection[];
+  issues: Issue[];
 
   // Request actions
   addRequest: (request: Omit<VehicleRequest, 'id' | 'requestedDate' | 'status' | 'vehicle' | 'driver' | 'reviewedBy' | 'reviewedDate'>) => VehicleRequest;
@@ -92,6 +110,13 @@ type FleetState = {
   // Fuel actions
   addFuelRecord: (record: Omit<FuelRecord, 'id'>) => FuelRecord;
   deleteFuelRecord: (id: string) => void;
+
+  // Inspection actions
+  addInspection: (inspection: Omit<Inspection, 'id' | 'date'>) => Inspection;
+
+  // Issue actions
+  addIssue: (issue: Omit<Issue, 'id' | 'date' | 'status'>) => Issue;
+  updateIssueStatus: (id: string, status: IssueStatus) => void;
 
   // Assignment actions
   addAssignment: (assignment: Omit<Assignment, 'id'>) => Assignment;
@@ -126,6 +151,8 @@ export const useFleetStore = create<FleetState>((set, get) => ({
   assignments: mockAssignments,
   notifications: mockNotifications,
   departments: mockDepartments,
+  inspections: mockInspections,
+  issues: mockIssues,
 
   // ─── Request Actions ──────────────────────────────────────────────────────
 
@@ -389,6 +416,79 @@ export const useFleetStore = create<FleetState>((set, get) => ({
     set((state) => ({
       maintenanceRecords: state.maintenanceRecords.filter((r) => r.id !== id),
     }));
+  },
+
+  // ─── Inspection Actions ───────────────────────────────────────────────────
+
+  addInspection: (inspectionData) => {
+    inspectionCounter += 1;
+    const id = generateId('INS', inspectionCounter);
+    const newInspection: Inspection = {
+      ...inspectionData,
+      id,
+      date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+    };
+    set((state) => ({
+      inspections: [newInspection, ...state.inspections],
+    }));
+
+    // Update vehicle mileage
+    const vehicle = get().vehicles.find((v) => v.registration === inspectionData.vehicle);
+    if (vehicle) {
+      get().updateVehicle(vehicle.id, { mileage: inspectionData.mileage });
+    }
+
+    return newInspection;
+  },
+
+  // ─── Issue Actions ────────────────────────────────────────────────────────
+
+  addIssue: (issueData) => {
+    issueCounter += 1;
+    const id = generateId('ISS', issueCounter);
+    const newIssue: Issue = {
+      ...issueData,
+      id,
+      date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+      status: 'Open',
+    };
+    set((state) => ({
+      issues: [newIssue, ...state.issues],
+    }));
+
+    // Notify Fleet Manager
+    get().addNotification({
+      type: 'system',
+      title: 'New Issue Reported',
+      message: `${issueData.type} reported for ${issueData.vehicle} — ${issueData.severity} severity`,
+      link: '/report-issue',
+    });
+
+    // If critical severity, update vehicle status
+    if (issueData.severity === 'Critical') {
+      const vehicle = get().vehicles.find((v) => v.registration === issueData.vehicle);
+      if (vehicle) {
+        get().updateVehicle(vehicle.id, { status: 'Maintenance', driver: null });
+      }
+    }
+
+    return newIssue;
+  },
+
+  updateIssueStatus: (id, status: IssueStatus) => {
+    set((state) => ({
+      issues: state.issues.map((i) => (i.id === id ? { ...i, status } : i)),
+    }));
+
+    const issue = get().issues.find((i) => i.id === id);
+    if (issue && status === 'Resolved') {
+      get().addNotification({
+        type: 'system',
+        title: 'Issue Resolved',
+        message: `Issue ${id} for ${issue.vehicle} has been resolved`,
+        link: '/report-issue',
+      });
+    }
   },
 
   // ─── Fuel Actions ─────────────────────────────────────────────────────────

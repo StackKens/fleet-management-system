@@ -198,6 +198,38 @@ export type Expense = {
   recordedBy: string;
 };
 
+// ─── Inspection ─────────────────────────────────────────────────────────────
+export type InspectionType = 'Pre-trip' | 'Post-trip' | 'Weekly' | 'Monthly';
+export type InspectionResult = 'Passed' | 'Failed' | 'Pending';
+
+export type Inspection = {
+  id: string;
+  vehicle: string;
+  type: InspectionType;
+  result: InspectionResult;
+  mileage: number;
+  notes: string;
+  date: string;
+  submittedBy: string;
+};
+
+// ─── Issue ──────────────────────────────────────────────────────────────────
+export type IssueType = 'Vehicle problem' | 'Accident' | 'Incident' | 'Other';
+export type IssueSeverity = 'Low' | 'Medium' | 'High' | 'Critical';
+export type IssueStatus = 'Open' | 'In progress' | 'Resolved';
+
+export type Issue = {
+  id: string;
+  vehicle: string;
+  type: IssueType;
+  severity: IssueSeverity;
+  status: IssueStatus;
+  description: string;
+  location: string;
+  date: string;
+  reportedBy: string;
+};
+
 // ─── Report ─────────────────────────────────────────────────────────────────
 export type ReportType =
   | 'Vehicle utilization'
