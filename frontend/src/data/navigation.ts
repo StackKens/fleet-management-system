@@ -63,6 +63,12 @@ export const ROLE_NAVIGATION: Record<UserRole, RoleNavigation> = {
           { label: 'Reports', href: '/reports', icon: BarChart3, capability: CAPABILITIES.VIEW_REPORTS },
         ],
       },
+      {
+        title: 'Administration',
+        items: [
+          { label: 'Departments', href: '/departments', icon: Building2, capability: CAPABILITIES.MANAGE_DEPARTMENTS },
+        ],
+      },
     ],
   },
 

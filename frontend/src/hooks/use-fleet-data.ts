@@ -219,14 +219,7 @@ export function useDepartments() {
     queryKey: queryKeys.departments,
     queryFn: async () => {
       await delay();
-      return [
-        { id: 'DEP-001', name: 'Field Operations', head: 'Robert Okello', vehicleCount: 8, driverCount: 12 },
-        { id: 'DEP-002', name: 'Public Health', head: 'Dr. Grace Namusoke', vehicleCount: 6, driverCount: 8 },
-        { id: 'DEP-003', name: 'Water & Sanitation', head: 'James Kato', vehicleCount: 5, driverCount: 6 },
-        { id: 'DEP-004', name: 'Administration', head: 'Sarah Nalwoga', vehicleCount: 4, driverCount: 3 },
-        { id: 'DEP-005', name: 'Logistics', head: 'David Ssemwanga', vehicleCount: 3, driverCount: 4 },
-        { id: 'DEP-006', name: 'Programmes', head: 'Agnes Kiconco', vehicleCount: 4, driverCount: 5 },
-      ];
+      return useFleetStore.getState().departments ?? [];
     },
   });
 }

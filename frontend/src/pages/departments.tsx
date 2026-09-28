@@ -1,24 +1,152 @@
-import { Building2, Plus } from 'lucide-react';
+import { useState } from 'react';
+import { Building2, Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { FormField } from '@/components/ui/form-field';
+import { PageHeader } from '@/components/ui/page-header';
+import { Modal } from '@/components/ui/modal';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { useFleetStore } from '@/stores/fleet-store';
 import { useDepartments } from '@/hooks/use-fleet-data';
+import { toast } from '@/hooks/use-toast';
+import type { Department } from '@/data/types';
+
+type DepartmentFormData = {
+  name: string;
+  head: string;
+};
+
+const emptyForm: DepartmentFormData = {
+  name: '',
+  head: '',
+};
 
 export default function Departments() {
   const { data: departments } = useDepartments();
+  const addNotification = useFleetStore((s) => s.addNotification);
+
+  const [addModal, setAddModal] = useState(false);
+  const [editDept, setEditDept] = useState<Department | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<Department | null>(null);
+  const [formData, setFormData] = useState<DepartmentFormData>(emptyForm);
+  const [formErrors, setFormErrors] = useState<Partial<DepartmentFormData>>({});
+  const [submitting, setSubmitting] = useState(false);
+
+  const validateForm = (): boolean => {
+    const errors: Partial<DepartmentFormData> = {};
+    if (!formData.name.trim()) errors.name = 'Department name is required';
+    if (!formData.head.trim()) errors.head = 'Department head is required';
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+
+    setSubmitting(true);
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    const newDept: Department = {
+      id: `DEP-${String((departments?.length ?? 0) + 1).padStart(3, '0')}`,
+      name: formData.name.trim(),
+      head: formData.head.trim(),
+      vehicleCount: 0,
+      driverCount: 0,
+    };
+
+    useFleetStore.setState((state) => ({
+      departments: [...(state.departments ?? []), newDept],
+    }));
+
+    addNotification({
+      type: 'system',
+      title: 'Department Added',
+      message: `${formData.name} has been added to the organization.`,
+      link: '/departments',
+    });
+
+    setSubmitting(false);
+    setAddModal(false);
+    setFormData(emptyForm);
+    setFormErrors({});
+
+    toast({
+      title: 'Department Added',
+      description: `${formData.name} has been added successfully.`,
+    });
+  };
+
+  const handleEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editDept || !validateForm()) return;
+
+    setSubmitting(true);
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    useFleetStore.setState((state) => ({
+      departments: (state.departments ?? []).map((d) =>
+        d.id === editDept.id ? { ...d, name: formData.name.trim(), head: formData.head.trim() } : d,
+      ),
+    }));
+
+    addNotification({
+      type: 'system',
+      title: 'Department Updated',
+      message: `${formData.name} has been updated.`,
+      link: '/departments',
+    });
+
+    setSubmitting(false);
+    setEditDept(null);
+    setFormData(emptyForm);
+    setFormErrors({});
+
+    toast({
+      title: 'Department Updated',
+      description: `${formData.name} has been updated successfully.`,
+    });
+  };
+
+  const handleDelete = () => {
+    if (!deleteConfirm) return;
+
+    useFleetStore.setState((state) => ({
+      departments: (state.departments ?? []).filter((d) => d.id !== deleteConfirm.id),
+    }));
+
+    addNotification({
+      type: 'system',
+      title: 'Department Removed',
+      message: `${deleteConfirm.name} has been removed from the organization.`,
+      link: '/departments',
+    });
+
+    toast({
+      title: 'Department Deleted',
+      description: `${deleteConfirm.name} has been deleted.`,
+    });
+    setDeleteConfirm(null);
+  };
+
+  const openEditModal = (dept: Department) => {
+    setFormData({ name: dept.name, head: dept.head });
+    setEditDept(dept);
+  };
 
   return (
     <div className="mx-auto max-w-[1520px] px-5 py-7 sm:px-8 lg:px-10">
-      <section className="mb-7 flex flex-col justify-between gap-4 border-b border-border pb-6 sm:flex-row sm:items-end">
-        <div>
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">Admin Workspace</p>
-          <h2 className="text-2xl font-semibold tracking-tight text-foreground">Departments</h2>
-          <p className="mt-2 text-sm text-muted-foreground">Manage organizational departments</p>
-        </div>
-        <Button size="sm">
-          <Plus className="h-3.5 w-3.5" />
-          Add Department
-        </Button>
-      </section>
+      <PageHeader
+        title="Departments"
+        description="Manage organizational departments"
+        actions={
+          <Button onClick={() => { setFormData(emptyForm); setFormErrors({}); setAddModal(true); }}>
+            <Plus className="h-4 w-4" />
+            Add Department
+          </Button>
+        }
+      />
 
       <section className="border border-border bg-card">
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
@@ -46,12 +174,109 @@ export default function Departments() {
                 <div className="flex items-center gap-3">
                   <Badge variant="default">{dept.vehicleCount} vehicles</Badge>
                   <Badge variant="default">{dept.driverCount} drivers</Badge>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => openEditModal(dept)}
+                      className="h-7 px-2 text-[11px]"
+                    >
+                      <Edit className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setDeleteConfirm(dept)}
+                      className="h-7 px-2 text-[11px] text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             ))
           )}
         </div>
       </section>
+
+      {/* Add Department Modal */}
+      <Modal
+        open={addModal}
+        onClose={() => { setAddModal(false); setFormData(emptyForm); setFormErrors({}); }}
+        title="Add New Department"
+        description="Create a new organizational department"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => { setAddModal(false); setFormData(emptyForm); setFormErrors({}); }}>
+              Cancel
+            </Button>
+            <Button onClick={handleAdd} disabled={submitting}>
+              {submitting ? 'Adding...' : 'Add Department'}
+            </Button>
+          </>
+        }
+      >
+        <form onSubmit={handleAdd} className="space-y-4">
+          <FormField label="Department Name" required error={formErrors.name}>
+            <Input
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="e.g., Public Health"
+            />
+          </FormField>
+          <FormField label="Department Head" required error={formErrors.head}>
+            <Input
+              value={formData.head}
+              onChange={(e) => setFormData({ ...formData, head: e.target.value })}
+              placeholder="e.g., Dr. Grace Namusoke"
+            />
+          </FormField>
+        </form>
+      </Modal>
+
+      {/* Edit Department Modal */}
+      <Modal
+        open={!!editDept}
+        onClose={() => { setEditDept(null); setFormData(emptyForm); setFormErrors({}); }}
+        title={editDept ? `Edit Department — ${editDept.name}` : ''}
+        description="Update department details"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => { setEditDept(null); setFormData(emptyForm); setFormErrors({}); }}>
+              Cancel
+            </Button>
+            <Button onClick={handleEdit} disabled={submitting}>
+              {submitting ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </>
+        }
+      >
+        <form onSubmit={handleEdit} className="space-y-4">
+          <FormField label="Department Name" required error={formErrors.name}>
+            <Input
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            />
+          </FormField>
+          <FormField label="Department Head" required error={formErrors.head}>
+            <Input
+              value={formData.head}
+              onChange={(e) => setFormData({ ...formData, head: e.target.value })}
+            />
+          </FormField>
+        </form>
+      </Modal>
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        open={!!deleteConfirm}
+        onClose={() => setDeleteConfirm(null)}
+        onConfirm={handleDelete}
+        title="Delete Department"
+        description={`Are you sure you want to delete ${deleteConfirm?.name}? This action cannot be undone.`}
+        confirmLabel="Delete"
+        variant="destructive"
+      />
     </div>
   );
 }

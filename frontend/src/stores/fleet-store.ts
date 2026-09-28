@@ -8,6 +8,7 @@ import type {
   FuelRecord,
   Assignment,
   AppNotification,
+  Department,
   VehicleStatus,
   RequestStatus,
   TripStatus,
@@ -24,6 +25,15 @@ import {
   assignments as mockAssignments,
   notifications as mockNotifications,
 } from '@/data/mock-data';
+
+const mockDepartments: Department[] = [
+  { id: 'DEP-001', name: 'Field Operations', head: 'Robert Okello', vehicleCount: 8, driverCount: 12 },
+  { id: 'DEP-002', name: 'Public Health', head: 'Dr. Grace Namusoke', vehicleCount: 6, driverCount: 8 },
+  { id: 'DEP-003', name: 'Water & Sanitation', head: 'James Kato', vehicleCount: 5, driverCount: 6 },
+  { id: 'DEP-004', name: 'Administration', head: 'Sarah Nalwoga', vehicleCount: 4, driverCount: 3 },
+  { id: 'DEP-005', name: 'Logistics', head: 'David Ssemwanga', vehicleCount: 3, driverCount: 4 },
+  { id: 'DEP-006', name: 'Programmes', head: 'Agnes Kiconco', vehicleCount: 4, driverCount: 5 },
+];
 
 let notificationCounter = 100;
 let requestCounter = 248;
@@ -50,6 +60,7 @@ type FleetState = {
   fuelRecords: FuelRecord[];
   assignments: Assignment[];
   notifications: AppNotification[];
+  departments: Department[];
 
   // Request actions
   addRequest: (request: Omit<VehicleRequest, 'id' | 'requestedDate' | 'status' | 'vehicle' | 'driver' | 'reviewedBy' | 'reviewedDate'>) => VehicleRequest;
@@ -114,6 +125,7 @@ export const useFleetStore = create<FleetState>((set, get) => ({
   fuelRecords: mockFuel,
   assignments: mockAssignments,
   notifications: mockNotifications,
+  departments: mockDepartments,
 
   // ─── Request Actions ──────────────────────────────────────────────────────
 

@@ -184,7 +184,7 @@ function Router() {
                   </RouteGuard>
                 </Route>
                 <Route path="/departments">
-                  <RouteGuard requiredCapabilities={CAPABILITIES.MANAGE_DEPARTMENTS}>
+                  <RouteGuard requiredCapabilities={[CAPABILITIES.MANAGE_DEPARTMENTS]}>
                     <Departments />
                   </RouteGuard>
                 </Route>
