@@ -6,11 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { FormField } from '@/components/ui/form-field';
 import { PageHeader } from '@/components/ui/page-header';
+import { useFleetStore } from '@/stores/fleet-store';
 import { useDepartments } from '@/hooks/use-fleet-data';
 import { toast } from '@/hooks/use-toast';
 
 export default function Settings() {
+  const addNotification = useFleetStore((s) => s.addNotification);
   const { data: departments } = useDepartments();
+
   const [orgName, setOrgName] = useState('Fleet Operations');
   const [timezone, setTimezone] = useState('Africa/Kampala');
   const [currency, setCurrency] = useState('UGX');
@@ -18,8 +21,21 @@ export default function Settings() {
   const [fuelAlertThreshold, setFuelAlertThreshold] = useState('15');
   const [insuranceReminderDays, setInsuranceReminderDays] = useState('30');
   const [defaultDepartment, setDefaultDepartment] = useState('');
+  const [saving, setSaving] = useState(false);
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    setSaving(true);
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    addNotification({
+      type: 'system',
+      title: 'Settings Updated',
+      description: 'System settings have been saved successfully.',
+      link: '/settings',
+    });
+
+    setSaving(false);
+
     toast({
       title: 'Settings saved',
       description: 'Fleet policies and operating defaults have been updated.',
@@ -32,9 +48,9 @@ export default function Settings() {
         title="Settings"
         description="Fleet policies, operating defaults and workspace settings."
         actions={
-          <Button onClick={handleSave}>
+          <Button onClick={handleSave} disabled={saving}>
             <Save className="h-4 w-4" />
-            Save changes
+            {saving ? 'Saving...' : 'Save changes'}
           </Button>
         }
       />
