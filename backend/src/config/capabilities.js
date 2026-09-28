@@ -1,6 +1,3 @@
-// Capabilities — defines what each role is allowed to do
-// This mirrors the frontend capability system
-
 const CAPABILITIES = {
   Admin: [
     'manage_users', 'manage_vehicles', 'manage_drivers',
@@ -29,14 +26,12 @@ const CAPABILITIES = {
   ],
 };
 
-// Check if a role has a specific capability
 function hasCapability(role, capability) {
   const caps = CAPABILITIES[role];
   if (!caps) return false;
   return caps.includes(capability) || caps.includes('view_all');
 }
 
-// Get all capabilities for a role
 function getCapabilities(role) {
   return CAPABILITIES[role] || [];
 }

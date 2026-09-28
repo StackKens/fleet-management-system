@@ -1,7 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-// Get all users with optional filtering
 async function getAllUsers(filters = {}) {
   const { role, status, departmentId, search } = filters;
 
@@ -33,7 +32,6 @@ async function getAllUsers(filters = {}) {
   });
 }
 
-// Get a single user by ID
 async function getUserById(id) {
   return prisma.user.findUnique({
     where: { id },
@@ -51,7 +49,6 @@ async function getUserById(id) {
   });
 }
 
-// Update a user
 async function updateUser(id, data) {
   return prisma.user.update({
     where: { id },
@@ -68,7 +65,6 @@ async function updateUser(id, data) {
   });
 }
 
-// Delete a user
 async function deleteUser(id) {
   return prisma.user.delete({ where: { id } });
 }

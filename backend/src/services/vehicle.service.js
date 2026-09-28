@@ -1,7 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-// Get all vehicles with optional filters
 async function getAllVehicles(filters = {}) {
   const { status, departmentId, search, vehicleType } = filters;
 
@@ -26,7 +25,6 @@ async function getAllVehicles(filters = {}) {
   });
 }
 
-// Get a single vehicle by ID
 async function getVehicleById(id) {
   return prisma.vehicle.findUnique({
     where: { id },
@@ -38,7 +36,6 @@ async function getVehicleById(id) {
   });
 }
 
-// Create a new vehicle
 async function createVehicle(data) {
   return prisma.vehicle.create({
     data,
@@ -46,7 +43,6 @@ async function createVehicle(data) {
   });
 }
 
-// Update a vehicle
 async function updateVehicle(id, data) {
   return prisma.vehicle.update({
     where: { id },
@@ -55,12 +51,10 @@ async function updateVehicle(id, data) {
   });
 }
 
-// Delete a vehicle
 async function deleteVehicle(id) {
   return prisma.vehicle.delete({ where: { id } });
 }
 
-// Get vehicle status summary (counts by status)
 async function getVehicleSummary() {
   const total = await prisma.vehicle.count();
   const available = await prisma.vehicle.count({ where: { status: 'Available' } });

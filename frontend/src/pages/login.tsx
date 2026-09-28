@@ -79,13 +79,9 @@ export default function Login() {
           </Button>
 
           <div className="mt-6 border-t border-border pt-4">
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Demo accounts</p>
-            <div className="space-y-1 text-[11px] text-muted-foreground">
-              <p><span className="font-medium text-foreground">Admin:</span> admin@fleet.ug / admin123</p>
-              <p><span className="font-medium text-foreground">Manager:</span> fleet.manager@fleet.ug / admin123</p>
-              <p><span className="font-medium text-foreground">Staff:</span> grace.namusoke@fleet.ug / staff123</p>
-              <p><span className="font-medium text-foreground">Driver:</span> robert.okello@fleet.ug / driver123</p>
-            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Contact your administrator for account credentials.
+            </p>
           </div>
         </form>
       </div>

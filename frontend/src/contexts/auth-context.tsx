@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import type { UserRole } from '@/data/types';
 import { getCapabilitiesForRole, type Capability } from '@/data/capabilities';
+import { api } from '@/lib/api';
 
 export type AuthUser = {
   id: string;
@@ -21,14 +22,6 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const MOCK_USERS: (Omit<AuthUser, 'capabilities'> & { password: string })[] = [
-  { id: 'USR-001', name: 'Fleet Manager', email: 'fleet.manager@fleet.ug', password: 'admin123', role: 'Fleet Manager', department: 'Administration' },
-  { id: 'USR-002', name: 'System Administrator', email: 'admin@fleet.ug', password: 'admin123', role: 'Admin', department: 'Administration' },
-  { id: 'USR-003', name: 'Dr. Grace Namusoke', email: 'grace.namusoke@fleet.ug', password: 'staff123', role: 'Staff', department: 'Public Health' },
-  { id: 'USR-005', name: 'Robert Okello', email: 'robert.okello@fleet.ug', password: 'driver123', role: 'Driver', department: 'Field Operations' },
-  { id: 'USR-007', name: 'Transport Supervisor', email: 'supervisor@fleet.ug', password: 'super123', role: 'Supervisor', department: 'Field Operations' },
-];
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(() => {
     const stored = localStorage.getItem('fleet_user');
@@ -43,24 +36,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    const found = MOCK_USERS.find(
-      (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password,
-    );
-    if (found) {
-      const { password: _, ...authUser } = found;
-      const capabilities = getCapabilitiesForRole(authUser.role);
-      const userWithCaps = { ...authUser, capabilities };
+    try {
+      const response = await api.post('/auth/login', { email, password });
+      const userData = response.data;
+
+      localStorage.setItem('fleet_token', userData.token);
+
+      const capabilities = getCapabilitiesForRole(userData.role);
+      const userWithCaps = { ...userData, capabilities };
       setUser(userWithCaps);
       localStorage.setItem('fleet_user', JSON.stringify(userWithCaps));
       return true;
+    } catch {
+      return false;
     }
-    return false;
   };
 
   const logout = () => {
     setUser(null);
     localStorage.removeItem('fleet_user');
+    localStorage.removeItem('fleet_token');
   };
 
   const hasCapability = (capability: Capability): boolean => {
