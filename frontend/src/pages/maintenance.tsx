@@ -233,20 +233,21 @@ export default function Maintenance() {
           />
         ) : (
           <>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Record</TableHead>
-                  <TableHead>Vehicle</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Workshop</TableHead>
-                  <TableHead>Scheduled</TableHead>
-                  <TableHead>Cost</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="whitespace-nowrap">Record</TableHead>
+                    <TableHead className="whitespace-nowrap">Vehicle</TableHead>
+                    <TableHead className="whitespace-nowrap">Type</TableHead>
+                    <TableHead className="min-w-[200px]">Description</TableHead>
+                    <TableHead className="whitespace-nowrap">Workshop</TableHead>
+                    <TableHead className="whitespace-nowrap">Scheduled</TableHead>
+                    <TableHead className="whitespace-nowrap">Cost</TableHead>
+                    <TableHead className="whitespace-nowrap">Status</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
               <TableBody>
                 {paginated.map((record) => (
                   <TableRow key={record.id}>
@@ -279,7 +280,7 @@ export default function Maintenance() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
+                      <div className="flex flex-wrap items-center justify-end gap-1">
                         {record.status === 'Scheduled' && (
                           <Button
                             size="sm"
@@ -314,7 +315,8 @@ export default function Maintenance() {
                   </TableRow>
                 ))}
               </TableBody>
-            </Table>
+              </Table>
+            </div>
             <Pagination
               currentPage={page}
               totalPages={totalPages}
