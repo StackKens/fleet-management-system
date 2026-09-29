@@ -15,7 +15,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { Modal } from '@/components/ui/modal';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useFleetStore } from '@/stores/fleet-store';
-import { useUsers } from '@/hooks/use-fleet-data';
+import { useUsers, useDepartments } from '@/hooks/use-fleet-data';
 import { toast } from '@/hooks/use-toast';
 import type { UserRole } from '@/data/types';
 
@@ -45,6 +45,7 @@ const emptyForm: UserFormData = {
 
 export default function Users() {
   const { data: users, isLoading } = useUsers();
+  const { data: departments } = useDepartments();
   const addUser = useFleetStore((s) => s.addDriver);
   const updateUser = useFleetStore((s) => s.updateDriver);
   const deleteUser = useFleetStore((s) => s.deleteDriver);
@@ -336,7 +337,14 @@ export default function Users() {
               </Select>
             </FormField>
             <FormField label="Department" required error={formErrors.department}>
-              <Input value={formData.department} onChange={(e) => setFormData({ ...formData, department: e.target.value })} placeholder="e.g., Administration" />
+              <Select value={formData.department} onChange={(e) => setFormData({ ...formData, department: e.target.value })}>
+                <option value="">Select department...</option>
+                {(departments ?? []).map((dept) => (
+                  <option key={dept.id} value={dept.name}>
+                    {dept.name}
+                  </option>
+                ))}
+              </Select>
             </FormField>
           </div>
         </form>
@@ -382,7 +390,14 @@ export default function Users() {
               </Select>
             </FormField>
             <FormField label="Department" required error={formErrors.department}>
-              <Input value={formData.department} onChange={(e) => setFormData({ ...formData, department: e.target.value })} />
+              <Select value={formData.department} onChange={(e) => setFormData({ ...formData, department: e.target.value })}>
+                <option value="">Select department...</option>
+                {(departments ?? []).map((dept) => (
+                  <option key={dept.id} value={dept.name}>
+                    {dept.name}
+                  </option>
+                ))}
+              </Select>
             </FormField>
           </div>
         </form>
