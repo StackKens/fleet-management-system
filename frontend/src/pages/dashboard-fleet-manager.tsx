@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Link } from 'wouter';
 import {
   ArrowRight,
@@ -14,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { useActivity, useAttentionItems, useRequests, useTrips, useVehicleSummary } from '@/hooks/use-fleet-data';
+import { useLiveClock } from '@/hooks/use-live-clock';
 import type { ActivityType, AttentionSeverity } from '@/data/types';
 
 const summaryItems = [
@@ -47,16 +47,14 @@ function ActivityIcon({ type }: { type: ActivityType }) {
 }
 
 export default function FleetManagerDashboard() {
-  const [refreshed, setRefreshed] = useState('09:14');
+  const now = useLiveClock();
   const { data: summary } = useVehicleSummary();
   const { data: requests } = useRequests();
   const { data: attentionItems } = useAttentionItems();
   const { data: trips } = useTrips();
   const { data: activity } = useActivity();
 
-  const handleRefresh = () => {
-    setRefreshed(new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date()));
-  };
+  const handleRefresh = now.refresh;
 
   const items = summary
     ? summaryItems.map((item) => ({ ...item, value: summary[item.key as keyof typeof summary] }))
@@ -67,11 +65,17 @@ export default function FleetManagerDashboard() {
       <section className="mb-7 flex flex-col justify-between gap-4 border-b border-border pb-6 sm:flex-row sm:items-end">
         <div>
           <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">Operations overview</p>
-          <h2 className="text-2xl font-semibold tracking-tight text-foreground sm:text-[28px]">Good morning, Fleet Manager</h2>
+          <h2 className="text-2xl font-semibold tracking-tight text-foreground sm:text-[28px]">{now.greeting}, Fleet Manager</h2>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">Here is the current position of the fleet and the items requiring attention today.</p>
         </div>
         <div className="flex items-center gap-3">
-          <span className="hidden text-[11px] text-muted-foreground sm:inline">Updated {refreshed}</span>
+          <time
+            className="hidden text-[11px] text-muted-foreground sm:inline"
+            dateTime={now.iso}
+            data-testid="dashboard-current-datetime"
+          >
+            {now.dateTime}
+          </time>
           <Button variant="outline" size="sm" onClick={handleRefresh} data-testid="button-refresh-dashboard">
             <RefreshCw className="h-3.5 w-3.5" />
             Refresh

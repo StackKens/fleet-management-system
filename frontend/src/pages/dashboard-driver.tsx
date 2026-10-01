@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/auth-context';
 import { useTrips, useNotifications } from '@/hooks/use-fleet-data';
+import { useLiveClock } from '@/hooks/use-live-clock';
 
 const statusVariant: Record<string, 'warning' | 'success' | 'danger' | 'info' | 'default'> = {
   Pending: 'warning',
@@ -24,6 +25,7 @@ const statusVariant: Record<string, 'warning' | 'success' | 'danger' | 'info' | 
 
 export default function DriverDashboard() {
   const { user } = useAuth();
+  const now = useLiveClock();
   const { data: trips } = useTrips();
   const { data: notifications } = useNotifications();
 
@@ -39,13 +41,20 @@ export default function DriverDashboard() {
         <div>
           <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">Driver Workspace</p>
           <h2 className="text-2xl font-semibold tracking-tight text-foreground sm:text-[28px]">
-            Hello, {user?.name?.split(' ')[0] ?? 'Driver'}
+            {now.greeting}, {user?.name?.split(' ')[0] ?? 'Driver'}
           </h2>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
             Here is your assigned work and vehicle status for today.
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <time
+            className="hidden text-[11px] text-muted-foreground sm:inline"
+            dateTime={now.iso}
+            data-testid="dashboard-current-datetime"
+          >
+            {now.dateTime}
+          </time>
           <Link href="/report-issue" data-testid="link-report-issue">
             <Button variant="outline" size="sm">
               <AlertTriangle className="h-3.5 w-3.5" />

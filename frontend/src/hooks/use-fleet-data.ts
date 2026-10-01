@@ -398,7 +398,7 @@ export function useUsers() {
         department: d.department,
         phone: d.phone,
         status: d.status === 'Active' ? 'Active' as const : 'Inactive' as const,
-        lastLogin: 'Today, 09:00',
+        lastLogin: `Today, ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })}`,
         joinDate: d.joinDate,
       }));
     },

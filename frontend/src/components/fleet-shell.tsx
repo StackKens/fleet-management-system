@@ -48,6 +48,7 @@ import {
   X,
 } from 'lucide-react';
 import { useNotifications } from '@/hooks/use-fleet-data';
+import { useLiveClock } from '@/hooks/use-live-clock';
 import { useAuth } from '@/contexts/auth-context';
 import { Avatar } from '@/components/ui/avatar';
 import { getNavigationForRole, type NavSection } from '@/data/navigation';
@@ -221,6 +222,8 @@ export function FleetShell({ children }: { children: ReactNode }) {
   const [location] = useLocation();
   const { data: notifications } = useNotifications();
   const { user, logout } = useAuth();
+  // Live clock — the header used to be frozen at "Thursday, 18 July 2024 · 09:14".
+  const now = useLiveClock();
 
   // Don't render anything if no user is logged in
   if (!user) return null;
@@ -304,11 +307,17 @@ export function FleetShell({ children }: { children: ReactNode }) {
 
           {/* Right: Date, Notifications, Logout */}
           <div className="flex items-center gap-3 sm:gap-5">
-            {/* Current date (hidden on mobile) */}
-            <div className="hidden text-right sm:block">
-              <p className="text-xs font-medium text-foreground">Thursday, 18 July 2024</p>
-              <p className="mt-0.5 text-[11px] text-muted-foreground">East Africa Time · 09:14</p>
-            </div>
+            {/* Current date & time — live, from the browser clock */}
+            <time
+              className="hidden text-right sm:block"
+              dateTime={now.iso}
+              data-testid="shell-current-datetime"
+            >
+              <span className="block text-xs font-medium text-foreground">{now.longDate}</span>
+              <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                {now.timeZone ? `${now.timeZone} · ` : ''}{now.time}
+              </span>
+            </time>
             <div className="h-7 w-px bg-border" aria-hidden="true" />
 
             {/* Notification bell with unread badge */}

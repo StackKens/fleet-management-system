@@ -407,7 +407,7 @@ export default function Vehicles() {
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField label="Year" required error={formErrors.year}>
-              <Input type="number" value={formData.year} onChange={(e) => setFormData({ ...formData, year: e.target.value })} placeholder="e.g., 2024" />
+              <Input type="number" value={formData.year} onChange={(e) => setFormData({ ...formData, year: e.target.value })} placeholder={`e.g., ${new Date().getFullYear()}`} />
             </FormField>
             <FormField label="Color">
               <Input value={formData.color} onChange={(e) => setFormData({ ...formData, color: e.target.value })} placeholder="e.g., White" />
@@ -431,18 +431,18 @@ export default function Vehicles() {
           </FormField>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField label="Last Service">
-              <Input value={formData.lastService} onChange={(e) => setFormData({ ...formData, lastService: e.target.value })} placeholder="e.g., 01 Jan 2024" />
+              <Input value={formData.lastService} onChange={(e) => setFormData({ ...formData, lastService: e.target.value })} placeholder={`e.g., 01 Jan ${new Date().getFullYear()}`} />
             </FormField>
             <FormField label="Next Service">
-              <Input value={formData.nextService} onChange={(e) => setFormData({ ...formData, nextService: e.target.value })} placeholder="e.g., 01 Jul 2024" />
+              <Input value={formData.nextService} onChange={(e) => setFormData({ ...formData, nextService: e.target.value })} placeholder={`e.g., 01 Jul ${new Date().getFullYear()}`} />
             </FormField>
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField label="Insurance Expiry">
-              <Input value={formData.insuranceExpiry} onChange={(e) => setFormData({ ...formData, insuranceExpiry: e.target.value })} placeholder="e.g., 01 Jan 2025" />
+              <Input value={formData.insuranceExpiry} onChange={(e) => setFormData({ ...formData, insuranceExpiry: e.target.value })} placeholder={`e.g., 01 Jan ${new Date().getFullYear() + 1}`} />
             </FormField>
             <FormField label="Inspection Expiry">
-              <Input value={formData.inspectionExpiry} onChange={(e) => setFormData({ ...formData, inspectionExpiry: e.target.value })} placeholder="e.g., 01 Jan 2025" />
+              <Input value={formData.inspectionExpiry} onChange={(e) => setFormData({ ...formData, inspectionExpiry: e.target.value })} placeholder={`e.g., 01 Jan ${new Date().getFullYear() + 1}`} />
             </FormField>
           </div>
         </form>

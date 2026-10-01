@@ -13,9 +13,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/auth-context';
 import { useUsers, useDepartments, useNotifications } from '@/hooks/use-fleet-data';
+import { useLiveClock } from '@/hooks/use-live-clock';
 
 export default function AdminDashboard() {
   const { user } = useAuth();
+  const now = useLiveClock();
   const { data: users } = useUsers();
   const { data: departments } = useDepartments();
   const { data: notifications } = useNotifications();
@@ -32,13 +34,20 @@ export default function AdminDashboard() {
         <div>
           <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">Admin Workspace</p>
           <h2 className="text-2xl font-semibold tracking-tight text-foreground sm:text-[28px]">
-            Hello, {user?.name?.split(' ')[0]}
+            {now.greeting}, {user?.name?.split(' ')[0]}
           </h2>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
             Manage users, roles, departments, and system configuration.
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <time
+            className="hidden text-[11px] text-muted-foreground sm:inline"
+            dateTime={now.iso}
+            data-testid="dashboard-current-datetime"
+          >
+            {now.dateTime}
+          </time>
           <Link href="/notifications" data-testid="link-notifications">
             <Button variant="outline" size="sm" className="relative">
               <Bell className="h-3.5 w-3.5" />

@@ -327,7 +327,7 @@ export default function Drivers() {
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField label="License Number" required error={formErrors.licenseNumber}>
-              <Input value={formData.licenseNumber} onChange={(e) => setFormData({ ...formData, licenseNumber: e.target.value })} placeholder="e.g., DL-2024-123456" />
+              <Input value={formData.licenseNumber} onChange={(e) => setFormData({ ...formData, licenseNumber: e.target.value })} placeholder={`e.g., DL-${new Date().getFullYear()}-123456`} />
             </FormField>
             <FormField label="License Expiry" required error={formErrors.licenseExpiry}>
               <Input type="date" value={formData.licenseExpiry} onChange={(e) => setFormData({ ...formData, licenseExpiry: e.target.value })} />

@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/auth-context';
 import { useRequests, useTrips, useNotifications } from '@/hooks/use-fleet-data';
+import { useLiveClock } from '@/hooks/use-live-clock';
 
 const statusVariant: Record<string, 'warning' | 'success' | 'danger' | 'info' | 'default'> = {
   Pending: 'warning',
@@ -22,6 +23,7 @@ const statusVariant: Record<string, 'warning' | 'success' | 'danger' | 'info' | 
 
 export default function StaffDashboard() {
   const { user } = useAuth();
+  const now = useLiveClock();
   const { data: requests } = useRequests();
   const { data: trips } = useTrips();
   const { data: notifications } = useNotifications();
@@ -42,13 +44,20 @@ export default function StaffDashboard() {
         <div>
           <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">Staff Workspace</p>
           <h2 className="text-2xl font-semibold tracking-tight text-foreground sm:text-[28px]">
-            Hello, {user?.name?.split(' ')[0]}
+            {now.greeting}, {user?.name?.split(' ')[0]}
           </h2>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
             Request and track transportation for your department.
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <time
+            className="hidden text-[11px] text-muted-foreground sm:inline"
+            dateTime={now.iso}
+            data-testid="dashboard-current-datetime"
+          >
+            {now.dateTime}
+          </time>
           <Link href="/notifications" data-testid="link-notifications">
             <Button variant="outline" size="sm" className="relative">
               <Bell className="h-3.5 w-3.5" />

@@ -107,15 +107,23 @@ const mockDepartments: Department[] = [
   { id: 'DEP-006', name: 'Programmes', head: 'Agnes Kiconco', vehicleCount: 4, driverCount: 5 },
 ];
 
+// Seed dates are computed from the current date so inspections and issues
+// always look recent instead of being frozen in the past.
+function dateAt(offsetDays: number): string {
+  const date = new Date();
+  date.setDate(date.getDate() + offsetDays);
+  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
 const mockInspections: Inspection[] = [
-  { id: 'INS-001', vehicle: 'UAX 482C', type: 'Pre-trip', result: 'Passed', mileage: 128420, notes: 'All systems normal', date: '18 Jul 2024', submittedBy: 'Robert Okello' },
-  { id: 'INS-002', vehicle: 'UAX 482C', type: 'Post-trip', result: 'Passed', mileage: 128650, notes: 'Minor wear on front tires noted', date: '17 Jul 2024', submittedBy: 'Robert Okello' },
-  { id: 'INS-003', vehicle: 'UAX 482C', type: 'Weekly', result: 'Pending', mileage: 128420, notes: 'Scheduled weekly inspection', date: '16 Jul 2024', submittedBy: 'Robert Okello' },
+  { id: 'INS-001', vehicle: 'UAX 482C', type: 'Pre-trip', result: 'Passed', mileage: 128420, notes: 'All systems normal', date: dateAt(0), submittedBy: 'Robert Okello' },
+  { id: 'INS-002', vehicle: 'UAX 482C', type: 'Post-trip', result: 'Passed', mileage: 128650, notes: 'Minor wear on front tires noted', date: dateAt(-1), submittedBy: 'Robert Okello' },
+  { id: 'INS-003', vehicle: 'UAX 482C', type: 'Weekly', result: 'Pending', mileage: 128420, notes: 'Scheduled weekly inspection', date: dateAt(-2), submittedBy: 'Robert Okello' },
 ];
 
 const mockIssues: Issue[] = [
-  { id: 'ISS-001', vehicle: 'UAX 482C', type: 'Vehicle problem', severity: 'Medium', status: 'In progress', description: 'Brake noise from front left wheel', location: 'Kampala', date: '15 Jul 2024', reportedBy: 'Robert Okello' },
-  { id: 'ISS-002', vehicle: 'UAX 482C', type: 'Vehicle problem', severity: 'Low', status: 'Resolved', description: 'Engine warning light on dashboard', location: 'Kampala', date: '10 Jul 2024', reportedBy: 'Robert Okello' },
+  { id: 'ISS-001', vehicle: 'UAX 482C', type: 'Vehicle problem', severity: 'Medium', status: 'In progress', description: 'Brake noise from front left wheel', location: 'Kampala', date: dateAt(-3), reportedBy: 'Robert Okello' },
+  { id: 'ISS-002', vehicle: 'UAX 482C', type: 'Vehicle problem', severity: 'Low', status: 'Resolved', description: 'Engine warning light on dashboard', location: 'Kampala', date: dateAt(-8), reportedBy: 'Robert Okello' },
 ];
 
 // =============================================================================
