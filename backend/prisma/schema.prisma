@@ -930,7 +930,7 @@ model Issue {
 //   - Linking: Each notification can link to relevant page
 // =============================================================================
 model Notification {
-  id        String   @id @id @default(cuid())
+  id        String   @id @default(cuid())
 
   type      String   // maintenance, request, assignment, document, system
   title     String
@@ -985,7 +985,7 @@ model Notification {
 //   - Vehicle "UAX 482C" status changed to "Maintenance"
 // =============================================================================
 model ActivityLog {
-  id         String   @id @id @default(cuid())
+  id         String   @id @default(cuid())
 
   // WHAT ACTION WAS PERFORMED?
   // --------------------------

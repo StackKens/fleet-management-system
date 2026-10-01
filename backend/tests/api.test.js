@@ -2,6 +2,7 @@ const API_BASE = process.env.API_URL || 'http://localhost:8000/api';
 
 let token = null;
 let userId = null;
+let testEmail = null;
 let passed = 0;
 let failed = 0;
 
@@ -36,12 +37,16 @@ async function runTests() {
   });
 
   await test('Register User', async () => {
+    // Keep the generated email so the login test below uses the SAME address.
+    // (Calling Date.now() twice produced two different emails and made the
+    //  valid-login test fail even though the API was working correctly.)
+    testEmail = `test-${Date.now()}@fleet.ug`;
     const res = await fetch(`${API_BASE}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: 'Test User',
-        email: `test-${Date.now()}@fleet.ug`,
+        email: testEmail,
         password: 'testpass123',
         role: 'Staff',
         phone: '+256 772 000 000',
@@ -61,7 +66,7 @@ async function runTests() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        email: `test-${Date.now()}@fleet.ug`,
+        email: testEmail,
         password: 'testpass123',
       }),
     });
@@ -111,9 +116,30 @@ async function runTests() {
     assert(data.data.email.includes('@'), 'Returns user email');
   });
 
-  await test('Get Users List (with auth)', async () => {
+  await test('Role-Based Access — Staff blocked from user list', async () => {
+    // The test user is a Staff member. Listing all users is restricted to
+    // Admin / Fleet Manager / Supervisor, so a 403 here proves RBAC is working.
     const res = await fetch(`${API_BASE}/users`, {
       headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    assert(res.status === 403, 'Returns 403 for a Staff user');
+    assert(data.success === false, 'Access denied');
+  });
+
+  await test('Get Users List (as Admin)', async () => {
+    // Log in with the seeded administrator account for a permitted request.
+    const loginRes = await fetch(`${API_BASE}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'admin@fleet.ug', password: 'password123' }),
+    });
+    const loginData = await loginRes.json();
+    assert(loginRes.ok, 'Admin login successful');
+    const adminToken = loginData.data.token;
+
+    const res = await fetch(`${API_BASE}/users`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
     });
     const data = await res.json();
     assert(res.ok, 'Users list retrieved');

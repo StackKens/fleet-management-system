@@ -34,6 +34,11 @@ Read these documents in order:
 7. [07 — Learning log](07-learning-log/README.md)
    - Record questions, experiments, and understanding after each session.
 
+## Reports
+
+- [Week 8 — Testing and refinement](17-week-8-testing-and-refinement/README.md)
+  - Testing results, errors found and fixed, and the challenges encountered.
+
 ## How we will learn
 
 For every learning process, we will use this sequence:

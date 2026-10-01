@@ -24,6 +24,12 @@ const schemas = {
     year: z.number().int().min(1900).max(2100),
     color: z.string().optional(),
     fuelType: z.enum(['Petrol', 'Diesel', 'Hybrid', 'Electric']).optional(),
+    status: z.enum(['Available', 'In Use', 'Maintenance', 'Out of Service']).optional(),
+    mileage: z.number().int().min(0).optional(),
+    lastService: z.string().optional(),
+    nextService: z.string().optional(),
+    insuranceExpiry: z.string().optional(),
+    inspectionExpiry: z.string().optional(),
     departmentId: z.string().optional(),
   }),
 
@@ -45,6 +51,10 @@ const schemas = {
     assignmentId: z.string().optional(),
   }),
 };
+
+// Partial version for PUT updates — only the supplied fields are validated,
+// so a client can update just one field without resending the whole record.
+schemas.vehicleUpdate = schemas.vehicle.partial();
 
 // Middleware factory — validates request body against a schema
 function validate(schemaName) {

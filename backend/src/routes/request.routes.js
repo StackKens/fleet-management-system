@@ -3,6 +3,7 @@ const router = express.Router();
 const requestController = require('../controllers/request.controller');
 const authenticate = require('../middleware/auth');
 const authorize = require('../middleware/authorize');
+const validate = require('../middleware/validate');
 
 router.use(authenticate);
 
@@ -16,7 +17,7 @@ router.get('/summary', requestController.getSummary);
 router.get('/:id', requestController.getById);
 
 // POST /api/requests — create request (any authenticated user)
-router.post('/', requestController.create);
+router.post('/', validate('request'), requestController.create);
 
 // PUT /api/requests/:id/status — approve/decline (Admin, Fleet Manager)
 router.put('/:id/status', authorize('Admin', 'Fleet Manager'), requestController.updateStatus);
